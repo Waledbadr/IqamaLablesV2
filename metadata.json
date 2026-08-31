@@ -1,0 +1,6 @@
+{
+  "name": "StickerPrint",
+  "description": "طباعة أرقام الموظفين على استيكرات A4 بدقة متناهية - Precision Employee ID Sticker Printer for A4 Sheets",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

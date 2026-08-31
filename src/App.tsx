@@ -27,12 +27,12 @@ export function App() {
   }, [language, theme]);
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans text-xs antialiased">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans text-xs antialiased print:h-auto print:w-auto print:overflow-visible print:bg-white">
       {/* Top Header */}
       <Header />
 
       {/* Main Content: Sidebar + A4 Stage */}
-      <main className="flex-1 flex overflow-hidden relative">
+      <main className="flex-1 flex overflow-hidden relative print:hidden">
         <Sidebar />
         <A4Preview />
       </main>

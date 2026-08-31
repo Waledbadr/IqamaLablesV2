@@ -1,6 +1,7 @@
 import React from 'react';
 import { usePrintStore } from '../store/usePrintStore';
 import { generateStickersPDF } from '../lib/pdfGenerator';
+import { triggerBrowserPrint } from '../lib/printService';
 import {
   Printer,
   FileDown,
@@ -53,7 +54,11 @@ export const Header: React.FC = () => {
   };
 
   const handleDirectPrint = () => {
-    window.print();
+    triggerBrowserPrint({
+      template,
+      pages: assignment.pages,
+      calibration,
+    });
   };
 
   const handleNewJob = () => {

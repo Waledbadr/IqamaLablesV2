@@ -123,6 +123,7 @@ export interface PrintStoreState {
   // Manual assignments & Swap
   setSwapCandidate: (candidate: { fromIndex: number; toIndex: number; fromNum: string; toNum: string } | null) => void;
   executeSwap: () => void;
+  executeSequenceShift: () => void;
   clearSelectedAssignment: () => void;
   resetManualAssignments: (pageIndex?: number) => void;
 
@@ -612,6 +613,78 @@ export const usePrintStore = create<PrintStoreState>((set, get) => ({
       pageManuals[toIndex] = fromNum;
       // Source gets the target's number if exists, otherwise marked as __EMPTY__
       pageManuals[fromIndex] = toNum && toNum.trim().length > 0 ? toNum : '__EMPTY__';
+
+      return {
+        manualAssignmentsByPage: {
+          ...state.manualAssignmentsByPage,
+          [p]: pageManuals,
+        },
+        swapCandidate: null,
+        selectedStickerIndex: toIndex,
+      };
+    });
+  },
+
+  executeSequenceShift: () => {
+    const s = get();
+    if (!s.swapCandidate) return;
+
+    const { fromIndex, toIndex, fromNum } = s.swapCandidate;
+    const p = s.currentPageIndex;
+
+    get().pushHistory();
+
+    const validNumbers = s.employeeNumbers.filter((n) => n && n.trim().length > 0);
+    const numIdx = validNumbers.findIndex((n) => n === fromNum);
+
+    // If on Page 0 and it's the very first number or we're shifting the entire starting offset
+    if (p === 0 && (numIdx === 0 || numIdx === -1)) {
+      set((state) => {
+        const manuals = { ...state.manualAssignmentsByPage };
+        delete manuals[0];
+        return {
+          startPosition: toIndex + 1,
+          manualAssignmentsByPage: manuals,
+          swapCandidate: null,
+          selectedStickerIndex: toIndex,
+        };
+      });
+      return;
+    }
+
+    // General Sequence Shift:
+    // Starting with fromNum, assign consecutive numbers to available slots starting from toIndex
+    set((state) => {
+      const pageManuals = { ...(state.manualAssignmentsByPage[p] || {}) };
+      const usedSet = new Set(state.usedStickersByPage[p] || []);
+      const geo = calculateGeometry(state.template);
+      const totalStickers = geo.totalStickers;
+
+      const remainingNumbers = numIdx >= 0 ? validNumbers.slice(numIdx) : [fromNum];
+
+      // Free previous slots from fromIndex up to toIndex if shifted forward
+      if (toIndex > fromIndex) {
+        for (let i = fromIndex; i < toIndex; i++) {
+          if (!usedSet.has(i)) {
+            pageManuals[i] = '__EMPTY__';
+          }
+        }
+      } else {
+        // Shifted backward: clear manual overrides in between
+        for (let i = toIndex; i <= fromIndex; i++) {
+          if (!usedSet.has(i)) {
+            delete pageManuals[i];
+          }
+        }
+      }
+
+      let numCursor = 0;
+      for (let i = toIndex; i < totalStickers && numCursor < remainingNumbers.length; i++) {
+        if (!usedSet.has(i)) {
+          pageManuals[i] = remainingNumbers[numCursor];
+          numCursor++;
+        }
+      }
 
       return {
         manualAssignmentsByPage: {

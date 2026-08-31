@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { usePrintStore } from '../../store/usePrintStore';
 import { generateStickersPDF } from '../../lib/pdfGenerator';
+import { triggerBrowserPrint } from '../../lib/printService';
 import {
   Printer,
   FileDown,
@@ -34,7 +35,11 @@ export const PrintPreviewModal: React.FC = () => {
     : Math.max(template.paperWidth, template.paperHeight);
 
   const handleNativePrint = () => {
-    window.print();
+    triggerBrowserPrint({
+      template,
+      pages: assignment.pages,
+      calibration,
+    });
   };
 
   const handleExportPDF = () => {

@@ -1,5 +1,6 @@
 import React from 'react';
 import { usePrintStore } from '../../store/usePrintStore';
+import { useTranslation } from '../../lib/i18n';
 import { validateEmployeeNumbers, downloadSampleExcelFile } from '../../lib/excelParser';
 import {
   FileSpreadsheet,
@@ -17,8 +18,10 @@ export const DataInputSection: React.FC = () => {
     removeDuplicateNumbers,
     clearEmployeeData,
     setExcelImportModalOpen,
+    language,
   } = usePrintStore();
 
+  const { t } = useTranslation(language);
   const validation = validateEmployeeNumbers(employeeNumbers);
 
   const handleClear = () => {
@@ -34,16 +37,16 @@ export const DataInputSection: React.FC = () => {
           className="flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold transition-colors"
         >
           <FileSpreadsheet className="w-3.5 h-3.5" />
-          <span>استيراد Excel / CSV</span>
+          <span>{t('importExcel')}</span>
         </button>
 
         <button
           onClick={downloadSampleExcelFile}
           className="flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-medium border border-slate-200 dark:border-slate-700 transition-colors"
-          title="تحميل ملف إكسل تجريبي يحتوي على أصفار بادئة"
+          title={language === 'ar' ? 'تحميل ملف إكسل تجريبي يحتوي على أصفار بادئة' : 'Download sample excel with preserved leading zeros'}
         >
           <Download className="w-3.5 h-3.5 text-slate-400" />
-          <span>نموذج تجريبي</span>
+          <span>{t('downloadTemplate')}</span>
         </button>
       </div>
 
@@ -51,9 +54,11 @@ export const DataInputSection: React.FC = () => {
       <div>
         <div className="flex items-center justify-between mb-1">
           <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-            أرقام الموظفين (لصق مباشر)
+            {t('employeeNumbers')}
           </label>
-          <span className="text-[10px] text-slate-400 font-mono">سطر جديد لكل رقم</span>
+          <span className="text-[10px] text-slate-400 font-mono">
+            {language === 'ar' ? 'سطر جديد لكل رقم' : 'one per line'}
+          </span>
         </div>
 
         <textarea
@@ -69,9 +74,9 @@ export const DataInputSection: React.FC = () => {
       {/* Statistics & Validation Badge */}
       <div className="bg-slate-50 dark:bg-slate-800/60 p-2 rounded-md border border-slate-200 dark:border-slate-700/80 text-[11px] space-y-1.5">
         <div className="flex items-center justify-between">
-          <span className="text-slate-500 dark:text-slate-400">إجمالي الأرقام:</span>
+          <span className="text-slate-500 dark:text-slate-400">{t('totalNumbers')}:</span>
           <span className="font-bold font-mono text-sky-600 dark:text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded border border-sky-500/20">
-            {validation.total} موظف
+            {validation.total} {language === 'ar' ? 'موظف' : 'items'}
           </span>
         </div>
 
@@ -79,19 +84,19 @@ export const DataInputSection: React.FC = () => {
           <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 pt-1 border-t border-slate-200 dark:border-slate-700">
             <span className="flex items-center gap-1">
               <AlertCircle className="w-3.5 h-3.5" />
-              <span>مكررات ({validation.duplicateCount}):</span>
+              <span>{t('duplicates')} ({validation.duplicateCount}):</span>
             </span>
             <button
               onClick={removeDuplicateNumbers}
               className="text-[10px] font-bold underline hover:opacity-80"
             >
-              حذف التكرار
+              {t('removeDuplicates')}
             </button>
           </div>
         )}
 
         <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-200 dark:border-slate-700">
-          <span>الحفاظ على الأصفار البادئة (00125)</span>
+          <span>{language === 'ar' ? 'الحفاظ على الأصفار البادئة (00125)' : 'Leading zeros preserved (00125)'}</span>
           <CheckCircle2 className="w-3 h-3 text-emerald-500" />
         </div>
       </div>
@@ -103,7 +108,7 @@ export const DataInputSection: React.FC = () => {
           className="w-full flex items-center justify-center gap-1 py-1 text-[11px] text-rose-500 hover:text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-md transition-colors"
         >
           <Trash2 className="w-3.5 h-3.5" />
-          <span>مسح كل الأرقام</span>
+          <span>{t('clearAll')}</span>
         </button>
       )}
     </div>

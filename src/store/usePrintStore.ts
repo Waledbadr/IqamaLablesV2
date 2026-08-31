@@ -21,6 +21,11 @@ import {
   saveCustomTemplate,
   savePrintJob,
   saveSettings,
+  loadPinnedDefaultTemplate,
+  savePinnedDefaultTemplate,
+  loadCurrentSheetState,
+  saveCurrentSheetState,
+  clearCurrentSheetState,
 } from '../lib/storage';
 import { DEFAULT_TEMPLATE } from '../lib/templates';
 import { normalizeEmployeeInput } from '../lib/excelParser';
@@ -58,22 +63,30 @@ export interface PrintStoreState {
   showIndexBadges: boolean;
   language: Language;
   theme: ThemeMode;
+  toastMessage: string | null;
 
   // History
   past: HistorySnapshot[];
   future: HistorySnapshot[];
 
   // Persistence collections
+  defaultTemplateId: string;
   savedTemplates: StickerTemplate[];
   recentJobs: PrintJob[];
 
-  // UI Modals
+  // UI Modals & Workflows
   isPrintPreviewOpen: boolean;
   isCalibrationModalOpen: boolean;
   isTemplatesModalOpen: boolean;
   isRecentJobsModalOpen: boolean;
   isHelpModalOpen: boolean;
   isExcelImportModalOpen: boolean;
+  isPostPrintModalOpen: boolean;
+  postPrintSummary: {
+    printedCount: number;
+    pagesCount: number;
+    printedStickersByPage: Record<number, number[]>;
+  } | null;
   swapCandidate: { fromIndex: number; toIndex: number; fromNum: string; toNum: string } | null;
 
   // Computed layout accessor
@@ -86,11 +99,15 @@ export interface PrintStoreState {
   redo: () => void;
   canUndo: () => boolean;
   canRedo: () => boolean;
+  setToastMessage: (msg: string | null) => void;
 
   // Template actions
   setTemplate: (template: StickerTemplate) => void;
+  setDefaultTemplate: (templateId: string) => void;
+  pinCurrentTemplateAsDefault: () => void;
   updateTemplateField: <K extends keyof StickerTemplate>(key: K, value: StickerTemplate[K]) => void;
-  saveCurrentTemplate: (name: string) => void;
+  saveCurrentTemplate: (name: string, setAsDefault?: boolean) => void;
+  updateCurrentTemplateInPlace: () => void;
   removeCustomTemplate: (templateId: string) => void;
 
   // Data actions
@@ -104,13 +121,19 @@ export interface PrintStoreState {
   setCurrentPageIndex: (idx: number) => void;
   setSelectedStickerIndex: (idx: number | null) => void;
 
-  // Used stickers management
+  // Used stickers & Sheet Reuse management
   toggleStickerUsed: (pageIndex: number, stickerIndex: number) => void;
   markRowUsed: (pageIndex: number, rowIndex: number) => void;
   markColUsed: (pageIndex: number, colIndex: number) => void;
   markAllUsed: (pageIndex: number) => void;
   clearAllUsed: (pageIndex: number) => void;
   clearAllUsedAllPages: (resetStartPos?: boolean) => void;
+  startFreshBlankSheet: () => void;
+
+  // Post-Print Workflow
+  triggerPostPrintWorkflow: () => void;
+  confirmMarkPrintedAsUsed: (clearPrintedEmployees?: boolean) => void;
+  setPostPrintModalOpen: (open: boolean) => void;
 
   // Position adjustments
   setStickerOffset: (pageIndex: number, stickerIndex: number, x: number, y: number) => void;
@@ -158,6 +181,13 @@ const initialSettings = loadSettings();
 const initialCalibration = loadCalibration();
 const initialTemplates = loadSavedTemplates();
 const initialJobs = loadRecentJobs();
+const initialDefaultTemplateId = initialSettings.defaultTemplateId || DEFAULT_TEMPLATE.id;
+const pinnedDefault = loadPinnedDefaultTemplate();
+const initialDefaultTemplate =
+  pinnedDefault ||
+  initialTemplates.find((t) => t.id === initialDefaultTemplateId) ||
+  DEFAULT_TEMPLATE;
+const initialSheetState = loadCurrentSheetState();
 
 // Initial sample employee numbers for demo
 const INITIAL_DEMO_NUMBERS = [
@@ -186,13 +216,13 @@ const INITIAL_DEMO_NUMBERS = [
 export const usePrintStore = create<PrintStoreState>((set, get) => ({
   currentJobId: `job_${Date.now()}`,
   currentJobName: 'طباعة أرقام الموظفين',
-  template: DEFAULT_TEMPLATE,
+  template: initialDefaultTemplate,
   employeeNumbers: INITIAL_DEMO_NUMBERS,
   rawInputText: INITIAL_DEMO_NUMBERS.join('\n'),
-  startPosition: 1,
+  startPosition: initialSheetState?.startPosition || 1,
   currentPageIndex: 0,
   selectedStickerIndex: null,
-  usedStickersByPage: { 0: [] },
+  usedStickersByPage: initialSheetState?.usedStickersByPage || { 0: [] },
   individualOffsetsByPage: {},
   manualAssignmentsByPage: {},
   calibration: initialCalibration,
@@ -204,10 +234,12 @@ export const usePrintStore = create<PrintStoreState>((set, get) => ({
   showIndexBadges: initialSettings.showIndexBadges !== false,
   language: initialSettings.language || 'ar',
   theme: initialSettings.theme || 'light',
+  toastMessage: null,
 
   past: [],
   future: [],
 
+  defaultTemplateId: pinnedDefault?.id || initialDefaultTemplateId,
   savedTemplates: initialTemplates,
   recentJobs: initialJobs,
 
@@ -217,7 +249,20 @@ export const usePrintStore = create<PrintStoreState>((set, get) => ({
   isRecentJobsModalOpen: false,
   isHelpModalOpen: false,
   isExcelImportModalOpen: false,
+  isPostPrintModalOpen: false,
+  postPrintSummary: null,
   swapCandidate: null,
+
+  setToastMessage: (msg) => {
+    set({ toastMessage: msg });
+    if (msg) {
+      setTimeout(() => {
+        if (get().toastMessage === msg) {
+          set({ toastMessage: null });
+        }
+      }, 4000);
+    }
+  },
 
   getAssignmentResult: () => {
     const s = get();
@@ -325,17 +370,59 @@ export const usePrintStore = create<PrintStoreState>((set, get) => ({
     set({ template: { ...template } });
   },
 
-  updateTemplateField: (key, value) => {
-    get().pushHistory();
-    set((state) => ({
-      template: {
-        ...state.template,
-        [key]: value,
-      },
-    }));
+  setDefaultTemplate: (templateId) => {
+    saveSettings({ defaultTemplateId: templateId });
+    const s = get();
+    const found = s.savedTemplates.find((t) => t.id === templateId) || s.template;
+    savePinnedDefaultTemplate(found);
+    set({
+      defaultTemplateId: templateId,
+      template: found,
+    });
+    get().setToastMessage(
+      s.language === 'ar'
+        ? `تم تعيين وتثبيت "${found.name}" كقالب افتراضي`
+        : `Pinned "${found.nameEn || found.name}" as default template`
+    );
   },
 
-  saveCurrentTemplate: (name) => {
+  pinCurrentTemplateAsDefault: () => {
+    const s = get();
+    savePinnedDefaultTemplate(s.template);
+    saveSettings({ defaultTemplateId: s.template.id });
+    let updatedTemplates = s.savedTemplates;
+    if (!s.template.isPreset) {
+      updatedTemplates = saveCustomTemplate(s.template);
+    }
+    set({
+      defaultTemplateId: s.template.id,
+      savedTemplates: updatedTemplates,
+    });
+    get().setToastMessage(
+      s.language === 'ar'
+        ? '⭐ تم تثبيت القالب والتنسيق كقالب افتراضي دائم'
+        : '⭐ Pinned template & styling as default!'
+    );
+  },
+
+  updateTemplateField: (key, value) => {
+    get().pushHistory();
+    set((state) => {
+      const updatedTemplate = {
+        ...state.template,
+        [key]: value,
+      };
+      // If active template is the default, update pinned default in storage
+      if (updatedTemplate.id === state.defaultTemplateId) {
+        savePinnedDefaultTemplate(updatedTemplate);
+      }
+      return {
+        template: updatedTemplate,
+      };
+    });
+  },
+
+  saveCurrentTemplate: (name, setAsDefault = false) => {
     const s = get();
     const newTpl: StickerTemplate = {
       ...s.template,
@@ -345,7 +432,36 @@ export const usePrintStore = create<PrintStoreState>((set, get) => ({
       isPreset: false,
     };
     const updated = saveCustomTemplate(newTpl);
-    set({ savedTemplates: updated, template: newTpl });
+    if (setAsDefault) {
+      saveSettings({ defaultTemplateId: newTpl.id });
+      savePinnedDefaultTemplate(newTpl);
+    }
+    set({
+      savedTemplates: updated,
+      template: newTpl,
+      ...(setAsDefault ? { defaultTemplateId: newTpl.id } : {}),
+    });
+    get().setToastMessage(
+      s.language === 'ar'
+        ? `تم حفظ القالب "${newTpl.name}" بنجاح`
+        : `Saved template "${newTpl.nameEn || newTpl.name}" successfully`
+    );
+  },
+
+  updateCurrentTemplateInPlace: () => {
+    const s = get();
+    if (!s.template.isPreset) {
+      const updated = saveCustomTemplate(s.template);
+      set({ savedTemplates: updated });
+    }
+    if (s.template.id === s.defaultTemplateId) {
+      savePinnedDefaultTemplate(s.template);
+    }
+    get().setToastMessage(
+      s.language === 'ar'
+        ? 'تم حفظ جميع التعديلات والتنسيقات على القالب'
+        : 'Saved all modifications & styles to template'
+    );
   },
 
   removeCustomTemplate: (templateId) => {
@@ -398,7 +514,15 @@ export const usePrintStore = create<PrintStoreState>((set, get) => ({
 
   setStartPosition: (pos) => {
     get().pushHistory();
-    set({ startPosition: Math.max(1, pos) });
+    const clamped = Math.max(1, pos);
+    const s = get();
+    saveCurrentSheetState({
+      templateId: s.template.id,
+      startPosition: clamped,
+      usedStickersByPage: s.usedStickersByPage,
+      lastUpdated: new Date().toISOString(),
+    });
+    set({ startPosition: clamped });
   },
 
   setCurrentPageIndex: (idx) => {
@@ -418,11 +542,20 @@ export const usePrintStore = create<PrintStoreState>((set, get) => ({
         ? pageUsed.filter((i) => i !== stickerIndex)
         : [...pageUsed, stickerIndex];
 
+      const updatedAllPages = {
+        ...state.usedStickersByPage,
+        [pageIndex]: updatedPageUsed,
+      };
+
+      saveCurrentSheetState({
+        templateId: state.template.id,
+        startPosition: state.startPosition,
+        usedStickersByPage: updatedAllPages,
+        lastUpdated: new Date().toISOString(),
+      });
+
       return {
-        usedStickersByPage: {
-          ...state.usedStickersByPage,
-          [pageIndex]: updatedPageUsed,
-        },
+        usedStickersByPage: updatedAllPages,
       };
     });
   },
@@ -442,11 +575,20 @@ export const usePrintStore = create<PrintStoreState>((set, get) => ({
       const pageUsed = new Set(state.usedStickersByPage[pageIndex] || []);
       rowStickerIndices.forEach((idx) => pageUsed.add(idx));
 
+      const updatedAll = {
+        ...state.usedStickersByPage,
+        [pageIndex]: Array.from(pageUsed),
+      };
+
+      saveCurrentSheetState({
+        templateId: state.template.id,
+        startPosition: state.startPosition,
+        usedStickersByPage: updatedAll,
+        lastUpdated: new Date().toISOString(),
+      });
+
       return {
-        usedStickersByPage: {
-          ...state.usedStickersByPage,
-          [pageIndex]: Array.from(pageUsed),
-        },
+        usedStickersByPage: updatedAll,
       };
     });
   },
@@ -466,11 +608,20 @@ export const usePrintStore = create<PrintStoreState>((set, get) => ({
       const pageUsed = new Set(state.usedStickersByPage[pageIndex] || []);
       colStickerIndices.forEach((idx) => pageUsed.add(idx));
 
+      const updatedAll = {
+        ...state.usedStickersByPage,
+        [pageIndex]: Array.from(pageUsed),
+      };
+
+      saveCurrentSheetState({
+        templateId: state.template.id,
+        startPosition: state.startPosition,
+        usedStickersByPage: updatedAll,
+        lastUpdated: new Date().toISOString(),
+      });
+
       return {
-        usedStickersByPage: {
-          ...state.usedStickersByPage,
-          [pageIndex]: Array.from(pageUsed),
-        },
+        usedStickersByPage: updatedAll,
       };
     });
   },
@@ -486,31 +637,185 @@ export const usePrintStore = create<PrintStoreState>((set, get) => ({
     }
 
     get().pushHistory();
-    set((state) => ({
-      usedStickersByPage: {
+    set((state) => {
+      const updatedAll = {
         ...state.usedStickersByPage,
         [pageIndex]: allIndices,
-      },
-    }));
+      };
+
+      saveCurrentSheetState({
+        templateId: state.template.id,
+        startPosition: state.startPosition,
+        usedStickersByPage: updatedAll,
+        lastUpdated: new Date().toISOString(),
+      });
+
+      return {
+        usedStickersByPage: updatedAll,
+      };
+    });
   },
 
   clearAllUsed: (pageIndex) => {
     get().pushHistory();
-    set((state) => ({
-      usedStickersByPage: {
+    set((state) => {
+      const updatedAll = {
         ...state.usedStickersByPage,
         [pageIndex]: [],
-      },
-    }));
+      };
+
+      saveCurrentSheetState({
+        templateId: state.template.id,
+        startPosition: state.startPosition,
+        usedStickersByPage: updatedAll,
+        lastUpdated: new Date().toISOString(),
+      });
+
+      return {
+        usedStickersByPage: updatedAll,
+      };
+    });
   },
 
   clearAllUsedAllPages: (resetStartPos = true) => {
     get().pushHistory();
+    const newUsed = { 0: [] };
+    const newStartPos = resetStartPos ? 1 : get().startPosition;
+
+    saveCurrentSheetState({
+      templateId: get().template.id,
+      startPosition: newStartPos,
+      usedStickersByPage: newUsed,
+      lastUpdated: new Date().toISOString(),
+    });
+
     set({
-      usedStickersByPage: { 0: [] },
+      usedStickersByPage: newUsed,
       ...(resetStartPos ? { startPosition: 1 } : {}),
     });
   },
+
+  startFreshBlankSheet: () => {
+    get().pushHistory();
+    clearCurrentSheetState();
+    set({
+      usedStickersByPage: { 0: [] },
+      startPosition: 1,
+      manualAssignmentsByPage: {},
+      isPostPrintModalOpen: false,
+      postPrintSummary: null,
+    });
+    get().setToastMessage(
+      get().language === 'ar'
+        ? '✨ تم تصفير الورقة وجاهزة كورقة A4 جديدة بالكامل'
+        : '✨ Fresh blank sheet ready!'
+    );
+  },
+
+  triggerPostPrintWorkflow: () => {
+    const assignment = get().getAssignmentResult();
+    const printedStickersByPage: Record<number, number[]> = {};
+    let totalPrinted = 0;
+
+    assignment.pages.forEach((page) => {
+      const assignedIndices: number[] = [];
+      page.stickers.forEach((st) => {
+        if (st.status === 'assigned' && st.employeeNumber && st.employeeNumber.trim().length > 0) {
+          assignedIndices.push(st.index);
+          totalPrinted++;
+        }
+      });
+      if (assignedIndices.length > 0) {
+        printedStickersByPage[page.pageIndex] = assignedIndices;
+      }
+    });
+
+    if (totalPrinted === 0) {
+      return;
+    }
+
+    set({
+      isPostPrintModalOpen: true,
+      postPrintSummary: {
+        printedCount: totalPrinted,
+        pagesCount: assignment.pages.length,
+        printedStickersByPage,
+      },
+    });
+  },
+
+  confirmMarkPrintedAsUsed: (clearPrintedEmployees = true) => {
+    const s = get();
+    const summary = s.postPrintSummary;
+    if (!summary) {
+      set({ isPostPrintModalOpen: false });
+      return;
+    }
+
+    get().pushHistory();
+
+    // Merge printed indices into usedStickersByPage
+    const updatedUsedByPage: Record<number, number[]> = { ...s.usedStickersByPage };
+    Object.entries(summary.printedStickersByPage).forEach(([pageStr, indices]) => {
+      const pageIdx = Number(pageStr);
+      const existing = new Set(updatedUsedByPage[pageIdx] || []);
+      indices.forEach((idx) => existing.add(idx));
+      updatedUsedByPage[pageIdx] = Array.from(existing);
+    });
+
+    // If user wants to clear printed numbers (so they can paste next batch directly):
+    let updatedEmployeeNumbers = s.employeeNumbers;
+    let updatedRawText = s.rawInputText;
+    if (clearPrintedEmployees) {
+      const assignment = get().getAssignmentResult();
+      const printedNumSet = new Set<string>();
+      assignment.pages.forEach((p) => {
+        p.stickers.forEach((st) => {
+          if (st.status === 'assigned' && st.employeeNumber) {
+            printedNumSet.add(st.employeeNumber);
+          }
+        });
+      });
+      updatedEmployeeNumbers = s.employeeNumbers.filter((num) => !printedNumSet.has(num));
+      updatedRawText = updatedEmployeeNumbers.join('\n');
+    }
+
+    // Find next first available free slot on page 0
+    const geo = calculateGeometry(s.template);
+    const page0Used = new Set(updatedUsedByPage[0] || []);
+    let nextFirstFree = 1;
+    for (let i = 0; i < geo.totalStickers; i++) {
+      if (!page0Used.has(i)) {
+        nextFirstFree = i + 1;
+        break;
+      }
+    }
+
+    saveCurrentSheetState({
+      templateId: s.template.id,
+      startPosition: nextFirstFree,
+      usedStickersByPage: updatedUsedByPage,
+      lastUpdated: new Date().toISOString(),
+    });
+
+    set({
+      usedStickersByPage: updatedUsedByPage,
+      startPosition: nextFirstFree,
+      employeeNumbers: updatedEmployeeNumbers,
+      rawInputText: updatedRawText,
+      manualAssignmentsByPage: {},
+      isPostPrintModalOpen: false,
+      postPrintSummary: null,
+    });
+
+    get().setToastMessage(
+      s.language === 'ar'
+        ? `✅ تم تعليم ${summary.printedCount} استيكر كمستعمل وحفظ الورقة! الاستيكرات الفارغة جاهزة للطباعة القادمة.`
+        : `✅ Marked ${summary.printedCount} stickers as used & saved sheet for next batch.`
+    );
+  },
+
+  setPostPrintModalOpen: (open) => set({ isPostPrintModalOpen: open }),
 
   setStickerOffset: (pageIndex, stickerIndex, x, y) => {
     set((state) => {
@@ -653,7 +958,6 @@ export const usePrintStore = create<PrintStoreState>((set, get) => ({
     }
 
     // General Sequence Shift:
-    // Starting with fromNum, assign consecutive numbers to available slots starting from toIndex
     set((state) => {
       const pageManuals = { ...(state.manualAssignmentsByPage[p] || {}) };
       const usedSet = new Set(state.usedStickersByPage[p] || []);
@@ -822,9 +1126,16 @@ export const usePrintStore = create<PrintStoreState>((set, get) => ({
   },
 
   createNewJob: () => {
+    const s = get();
+    const defaultTpl =
+      loadPinnedDefaultTemplate() ||
+      s.savedTemplates.find((t) => t.id === s.defaultTemplateId) ||
+      DEFAULT_TEMPLATE;
+
     set({
       currentJobId: `job_${Date.now()}`,
-      currentJobName: 'عملية طباعة جديدة',
+      currentJobName: s.language === 'ar' ? 'عملية طباعة جديدة' : 'New Print Job',
+      template: { ...defaultTpl },
       employeeNumbers: [],
       rawInputText: '',
       startPosition: 1,

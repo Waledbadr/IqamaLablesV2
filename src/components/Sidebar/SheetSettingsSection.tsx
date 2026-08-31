@@ -1,6 +1,8 @@
 import React from 'react';
 import { usePrintStore } from '../../store/usePrintStore';
+import { useTranslation } from '../../lib/i18n';
 import { PageOrientation } from '../../types';
+import { Star, Check, Sparkles } from 'lucide-react';
 
 export const SheetSettingsSection: React.FC = () => {
   const {
@@ -9,7 +11,14 @@ export const SheetSettingsSection: React.FC = () => {
     savedTemplates,
     setTemplate,
     setTemplatesModalOpen,
+    defaultTemplateId,
+    setDefaultTemplate,
+    pinCurrentTemplateAsDefault,
+    updateCurrentTemplateInPlace,
+    language,
   } = usePrintStore();
+
+  const { t } = useTranslation(language);
 
   const handlePresetChange = (templateId: string) => {
     if (templateId === 'manage') {
@@ -23,6 +32,7 @@ export const SheetSettingsSection: React.FC = () => {
   };
 
   const isLandscape = template.orientation === 'landscape';
+  const isDefault = template.id === defaultTemplateId;
 
   const toggleOrientation = (orient: PageOrientation) => {
     updateTemplateField('orientation', orient);
@@ -34,13 +44,13 @@ export const SheetSettingsSection: React.FC = () => {
       <div>
         <div className="flex items-center justify-between mb-1">
           <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-            قوالب الاستيكرات الجاهزة
+            {t('presetTemplate')}
           </label>
           <button
             onClick={() => setTemplatesModalOpen(true)}
             className="text-[10px] text-sky-600 dark:text-sky-400 hover:underline"
           >
-            إدارة القوالب
+            {language === 'ar' ? 'إدارة القوالب' : 'Manage Templates'}
           </button>
         </div>
 
@@ -51,17 +61,47 @@ export const SheetSettingsSection: React.FC = () => {
         >
           {savedTemplates.map((tpl, idx) => (
             <option key={`${tpl.id}-${idx}`} value={tpl.id}>
-              {tpl.name}
+              {tpl.id === defaultTemplateId ? '★ ' : ''}
+              {language === 'ar' ? tpl.name : (tpl.nameEn || tpl.name)}
             </option>
           ))}
-          <option value="manage">⚙️ إدارة وحفظ القوالب المخصصة...</option>
+          <option value="manage">{language === 'ar' ? '⚙️ إدارة وحفظ القوالب المخصصة...' : '⚙️ Manage & Save Custom Templates...'}</option>
         </select>
+
+        {/* Pin Template & Styling as Permanent Default */}
+        <div className="mt-2 flex items-center justify-between gap-1.5 flex-wrap">
+          {isDefault ? (
+            <div className="flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20">
+              <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+              <span>{t('isDefaultTemplate')}</span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={pinCurrentTemplateAsDefault}
+              className="flex items-center gap-1 text-[10px] font-semibold text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-500/10 px-2 py-1 rounded border border-slate-200 dark:border-slate-700 transition-colors"
+              title={t('pinCurrentAsDefaultDesc')}
+            >
+              <Star className="w-3 h-3 text-slate-400 hover:text-amber-500" />
+              <span>{t('pinCurrentAsDefault')}</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={updateCurrentTemplateInPlace}
+            className="text-[10px] text-slate-500 hover:text-sky-600 dark:hover:text-sky-400 hover:underline ms-auto"
+            title="حفظ التعديلات والتنسيق الحالي على القالب"
+          >
+            {language === 'ar' ? 'حفظ التنسيق الحالي' : 'Save Style'}
+          </button>
+        </div>
       </div>
 
       {/* Orientation */}
       <div>
         <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
-          اتجاه الصفحة (Page Orientation)
+          {t('orientation')}
         </label>
         <div className="grid grid-cols-2 gap-1.5">
           <button
@@ -74,7 +114,7 @@ export const SheetSettingsSection: React.FC = () => {
             }`}
           >
             <div className="w-2.5 h-3.5 border border-current rounded-xs" />
-            <span>عمودي (Portrait)</span>
+            <span>{t('portrait')}</span>
           </button>
 
           <button
@@ -87,7 +127,7 @@ export const SheetSettingsSection: React.FC = () => {
             }`}
           >
             <div className="w-3.5 h-2.5 border border-current rounded-xs" />
-            <span>أفقي (Landscape)</span>
+            <span>{t('landscape')}</span>
           </button>
         </div>
       </div>
@@ -95,7 +135,7 @@ export const SheetSettingsSection: React.FC = () => {
       {/* Numbering / Flow Direction */}
       <div>
         <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
-          اتجاه وبدء الترقيم (Flow Direction)
+          {t('flowDirection')}
         </label>
         <div className="grid grid-cols-2 gap-1.5">
           <button
@@ -106,10 +146,10 @@ export const SheetSettingsSection: React.FC = () => {
                 ? 'bg-sky-500/10 border-sky-500/40 text-sky-600 dark:text-sky-400 shadow-2xs font-bold'
                 : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40'
             }`}
-            title="يبدأ الاستيكر رقم 1 من أعلى اليمين ثم يمتد لليسار (مناسب للغة العربية)"
+            title="Starts top-right to left (RTL)"
           >
             <span className="font-mono text-xs">➡️</span>
-            <span>من اليمين لليسار (RTL)</span>
+            <span>{t('flowRTL')}</span>
           </button>
 
           <button
@@ -120,10 +160,10 @@ export const SheetSettingsSection: React.FC = () => {
                 ? 'bg-sky-500/10 border-sky-500/40 text-sky-600 dark:text-sky-400 shadow-2xs font-bold'
                 : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40'
             }`}
-            title="يبدأ الاستيكر رقم 1 من أعلى اليسار ثم يمتد لليمين (LTR)"
+            title="Starts top-left to right (LTR)"
           >
             <span className="font-mono text-xs">⬅️</span>
-            <span>من اليسار لليمين (LTR)</span>
+            <span>{t('flowLTR')}</span>
           </button>
         </div>
       </div>
@@ -131,11 +171,11 @@ export const SheetSettingsSection: React.FC = () => {
       {/* Margins (mm) */}
       <div>
         <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
-          هوامش الورقة (بالمليمتر mm)
+          {t('margins')}
         </label>
         <div className="grid grid-cols-2 gap-1.5 text-xs">
           <div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">علوي (Top)</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">{t('marginTop')}</span>
             <div className="flex items-center">
               <input
                 type="number"
@@ -146,12 +186,12 @@ export const SheetSettingsSection: React.FC = () => {
                 onChange={(e) => updateTemplateField('marginTop', Number(e.target.value))}
                 className="w-full text-xs font-mono p-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
               />
-              <span className="text-[10px] font-mono text-slate-400 ms-1">مم</span>
+              <span className="text-[10px] font-mono text-slate-400 ms-1">mm</span>
             </div>
           </div>
 
           <div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">سفلي (Bottom)</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">{t('marginBottom')}</span>
             <div className="flex items-center">
               <input
                 type="number"
@@ -162,12 +202,12 @@ export const SheetSettingsSection: React.FC = () => {
                 onChange={(e) => updateTemplateField('marginBottom', Number(e.target.value))}
                 className="w-full text-xs font-mono p-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
               />
-              <span className="text-[10px] font-mono text-slate-400 ms-1">مم</span>
+              <span className="text-[10px] font-mono text-slate-400 ms-1">mm</span>
             </div>
           </div>
 
           <div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">أيمن (Right)</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">{t('marginRight')}</span>
             <div className="flex items-center">
               <input
                 type="number"
@@ -178,12 +218,12 @@ export const SheetSettingsSection: React.FC = () => {
                 onChange={(e) => updateTemplateField('marginRight', Number(e.target.value))}
                 className="w-full text-xs font-mono p-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
               />
-              <span className="text-[10px] font-mono text-slate-400 ms-1">مم</span>
+              <span className="text-[10px] font-mono text-slate-400 ms-1">mm</span>
             </div>
           </div>
 
           <div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">أيسر (Left)</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">{t('marginLeft')}</span>
             <div className="flex items-center">
               <input
                 type="number"
@@ -194,7 +234,7 @@ export const SheetSettingsSection: React.FC = () => {
                 onChange={(e) => updateTemplateField('marginLeft', Number(e.target.value))}
                 className="w-full text-xs font-mono p-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
               />
-              <span className="text-[10px] font-mono text-slate-400 ms-1">مم</span>
+              <span className="text-[10px] font-mono text-slate-400 ms-1">mm</span>
             </div>
           </div>
         </div>

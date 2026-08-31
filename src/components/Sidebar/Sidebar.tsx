@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { usePrintStore } from '../../store/usePrintStore';
+import { useTranslation } from '../../lib/i18n';
 import { DataInputSection } from './DataInputSection';
 import { SheetSettingsSection } from './SheetSettingsSection';
 import { StickerSettingsSection } from './StickerSettingsSection';
@@ -62,6 +64,9 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
 };
 
 export const Sidebar: React.FC = () => {
+  const { language, employeeNumbers } = usePrintStore();
+  const { t } = useTranslation(language);
+
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     data: true,
     sheet: true,
@@ -78,23 +83,26 @@ export const Sidebar: React.FC = () => {
     }));
   };
 
+  const validCount = employeeNumbers.filter((n) => n && n.trim().length > 0).length;
+
   return (
     <aside className="w-80 md:w-88 bg-white dark:bg-slate-900 border-e border-slate-200 dark:border-slate-800 h-full flex flex-col shrink-0 overflow-hidden select-none z-10">
       {/* Scrollable Accordion Content */}
       <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/40">
         <AccordionSection
           id="data"
-          title="بيانات أرقام الموظفين"
+          title={language === 'ar' ? 'بيانات أرقام الموظفين' : 'Employee Numbers Data'}
           icon={<FileText className="w-4 h-4" />}
           isOpen={openSections.data}
           onToggle={() => toggleSection('data')}
+          badge={validCount > 0 ? validCount : undefined}
         >
           <DataInputSection />
         </AccordionSection>
 
         <AccordionSection
           id="sheet"
-          title="إعدادات الورقة والقالب (A4)"
+          title={language === 'ar' ? 'إعدادات الورقة والقالب (A4)' : 'Sheet & Template Settings'}
           icon={<Layout className="w-4 h-4" />}
           isOpen={openSections.sheet}
           onToggle={() => toggleSection('sheet')}
@@ -104,7 +112,7 @@ export const Sidebar: React.FC = () => {
 
         <AccordionSection
           id="sticker"
-          title="أبعاد الاستيكر والشبكة"
+          title={language === 'ar' ? 'أبعاد الاستيكر والشبكة' : 'Sticker Grid Dimensions'}
           icon={<Grid className="w-4 h-4" />}
           isOpen={openSections.sticker}
           onToggle={() => toggleSection('sticker')}
@@ -114,7 +122,7 @@ export const Sidebar: React.FC = () => {
 
         <AccordionSection
           id="distribution"
-          title="التوزيع والورق المستعمل جزئياً"
+          title={language === 'ar' ? 'التوزيع والورق المستعمل جزئياً' : 'Layout & Used Paper'}
           icon={<Sparkles className="w-4 h-4" />}
           isOpen={openSections.distribution}
           onToggle={() => toggleSection('distribution')}
@@ -124,7 +132,7 @@ export const Sidebar: React.FC = () => {
 
         <AccordionSection
           id="position"
-          title="الموضع والمعايرة بالمليمتر"
+          title={language === 'ar' ? 'الموضع والمعايرة بالمليمتر' : 'Position & Calibration'}
           icon={<Move className="w-4 h-4" />}
           isOpen={openSections.position}
           onToggle={() => toggleSection('position')}
@@ -134,7 +142,7 @@ export const Sidebar: React.FC = () => {
 
         <AccordionSection
           id="text"
-          title="تنسيق النص والخطوط"
+          title={language === 'ar' ? 'تنسيق النص والخطوط' : 'Typography & Text Styling'}
           icon={<Type className="w-4 h-4" />}
           isOpen={openSections.text}
           onToggle={() => toggleSection('text')}

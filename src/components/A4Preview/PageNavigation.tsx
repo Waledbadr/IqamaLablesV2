@@ -1,5 +1,6 @@
 import React from 'react';
 import { usePrintStore } from '../../store/usePrintStore';
+import { useTranslation } from '../../lib/i18n';
 import { ChevronLeft, ChevronRight, AlertCircle, Layers } from 'lucide-react';
 
 export const PageNavigation: React.FC = () => {
@@ -7,13 +8,18 @@ export const PageNavigation: React.FC = () => {
     currentPageIndex,
     setCurrentPageIndex,
     getAssignmentResult,
+    language,
   } = usePrintStore();
 
+  const { t } = useTranslation(language);
   const assignment = getAssignmentResult();
   const totalPages = Math.max(1, assignment.totalPages);
   const activePage = assignment.pages[currentPageIndex] || assignment.pages[0];
 
   const hasOverflow = assignment.totalPages > 1;
+
+  const PrevIcon = language === 'ar' ? ChevronRight : ChevronLeft;
+  const NextIcon = language === 'ar' ? ChevronLeft : ChevronRight;
 
   return (
     <div className="w-full flex flex-col gap-1.5">
@@ -22,10 +28,12 @@ export const PageNavigation: React.FC = () => {
         <div className="flex items-center gap-2">
           <Layers className="w-3.5 h-3.5 text-sky-500" />
           <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-            صفحة {currentPageIndex + 1} من {totalPages}
+            {language === 'ar'
+              ? `صفحة ${currentPageIndex + 1} من ${totalPages}`
+              : `Page ${currentPageIndex + 1} of ${totalPages}`}
           </span>
           <span className="text-[10px] font-mono text-slate-400">
-            ({activePage?.totalAssigned || 0} استيكر مطبوع)
+            ({activePage?.totalAssigned || 0} {language === 'ar' ? 'استيكر مطبوع' : 'printed stickers'})
           </span>
         </div>
 
@@ -34,9 +42,9 @@ export const PageNavigation: React.FC = () => {
             onClick={() => setCurrentPageIndex(currentPageIndex - 1)}
             disabled={currentPageIndex <= 0}
             className="p-1 rounded border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none transition-colors"
-            title="الصفحة السابقة"
+            title={language === 'ar' ? 'الصفحة السابقة' : 'Previous Page'}
           >
-            <ChevronRight className="w-3.5 h-3.5" />
+            <PrevIcon className="w-3.5 h-3.5" />
           </button>
 
           {/* Quick Page Bubbles if multiple */}
@@ -62,9 +70,9 @@ export const PageNavigation: React.FC = () => {
             onClick={() => setCurrentPageIndex(currentPageIndex + 1)}
             disabled={currentPageIndex >= totalPages - 1}
             className="p-1 rounded border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none transition-colors"
-            title="الصفحة التالية"
+            title={language === 'ar' ? 'الصفحة التالية' : 'Next Page'}
           >
-            <ChevronLeft className="w-3.5 h-3.5" />
+            <NextIcon className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
@@ -75,11 +83,13 @@ export const PageNavigation: React.FC = () => {
           <div className="flex items-center gap-1.5">
             <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
             <span className="text-[11px]">
-              عدد الأرقام ({assignment.totalEmployeeNumbers}) يتطلب {totalPages} ورقات A4.
+              {language === 'ar'
+                ? `عدد الأرقام (${assignment.totalEmployeeNumbers}) يتطلب ${totalPages} ورقات A4.`
+                : `Total count (${assignment.totalEmployeeNumbers}) requires ${totalPages} A4 pages.`}
             </span>
           </div>
           <span className="font-mono text-[10px] font-bold">
-            المتبقي: {assignment.unassignedCount}
+            {language === 'ar' ? `المتبقي: ${assignment.unassignedCount}` : `Remaining: ${assignment.unassignedCount}`}
           </span>
         </div>
       )}

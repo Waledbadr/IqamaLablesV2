@@ -7,6 +7,8 @@ const STORAGE_KEYS = {
   ACTIVE_JOB: 'stickerprint_active_job_v1',
   CALIBRATION: 'stickerprint_calibration_v1',
   SETTINGS: 'stickerprint_settings_v1',
+  PINNED_DEFAULT_TEMPLATE: 'stickerprint_pinned_default_tpl_v2',
+  CURRENT_SHEET_STATE: 'stickerprint_current_sheet_state_v2',
 };
 
 export interface AppSettings {
@@ -16,6 +18,14 @@ export interface AppSettings {
   showRulers: boolean;
   showIndexBadges: boolean;
   zoomScale: number;
+  defaultTemplateId: string;
+}
+
+export interface PhysicalSheetState {
+  templateId?: string;
+  startPosition: number;
+  usedStickersByPage: Record<number, number[]>;
+  lastUpdated: string;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -25,7 +35,56 @@ const DEFAULT_SETTINGS: AppSettings = {
   showRulers: true,
   showIndexBadges: true,
   zoomScale: 1.0,
+  defaultTemplateId: DEFAULT_TEMPLATE.id,
 };
+
+export function savePinnedDefaultTemplate(template: StickerTemplate) {
+  try {
+    localStorage.setItem(STORAGE_KEYS.PINNED_DEFAULT_TEMPLATE, JSON.stringify(template));
+  } catch (e) {
+    console.error('Failed to save pinned default template', e);
+  }
+}
+
+export function loadPinnedDefaultTemplate(): StickerTemplate | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.PINNED_DEFAULT_TEMPLATE);
+    if (raw) {
+      return JSON.parse(raw);
+    }
+  } catch (e) {
+    console.error('Failed to load pinned default template', e);
+  }
+  return null;
+}
+
+export function saveCurrentSheetState(sheetState: PhysicalSheetState) {
+  try {
+    localStorage.setItem(STORAGE_KEYS.CURRENT_SHEET_STATE, JSON.stringify(sheetState));
+  } catch (e) {
+    console.error('Failed to save sheet state', e);
+  }
+}
+
+export function loadCurrentSheetState(): PhysicalSheetState | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.CURRENT_SHEET_STATE);
+    if (raw) {
+      return JSON.parse(raw);
+    }
+  } catch (e) {
+    console.error('Failed to load sheet state', e);
+  }
+  return null;
+}
+
+export function clearCurrentSheetState() {
+  try {
+    localStorage.removeItem(STORAGE_KEYS.CURRENT_SHEET_STATE);
+  } catch (e) {
+    console.error('Failed to clear sheet state', e);
+  }
+}
 
 const DEFAULT_CALIBRATION: PrinterCalibration = {
   scaleX: 1.0,

@@ -2,6 +2,7 @@ import React from 'react';
 import { usePrintStore } from '../store/usePrintStore';
 import { generateStickersPDF } from '../lib/pdfGenerator';
 import { triggerBrowserPrint } from '../lib/printService';
+import { useTranslation } from '../lib/i18n';
 import {
   Printer,
   FileDown,
@@ -13,10 +14,8 @@ import {
   HelpCircle,
   Sun,
   Moon,
-  Languages,
   Plus,
   Eye,
-  Sparkles,
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -38,8 +37,10 @@ export const Header: React.FC = () => {
     template,
     calibration,
     getAssignmentResult,
+    triggerPostPrintWorkflow,
   } = usePrintStore();
 
+  const { t } = useTranslation(language);
   const assignment = getAssignmentResult();
 
   const handleExportPDF = () => {
@@ -51,6 +52,9 @@ export const Header: React.FC = () => {
     });
     const safeName = (template.name || 'stickers').replace(/[^a-zA-Z0-9_\u0600-\u06FF]/g, '_');
     doc.save(`StickerPrint_${safeName}_${Date.now()}.pdf`);
+    setTimeout(() => {
+      triggerPostPrintWorkflow();
+    }, 600);
   };
 
   const handleDirectPrint = () => {
@@ -59,10 +63,13 @@ export const Header: React.FC = () => {
       pages: assignment.pages,
       calibration,
     });
+    setTimeout(() => {
+      triggerPostPrintWorkflow();
+    }, 600);
   };
 
   const handleNewJob = () => {
-    if (window.confirm('هل تريد بدء عملية طباعة جديدة ومسح البيانات الحالية؟')) {
+    if (window.confirm(language === 'ar' ? 'هل تريد بدء عملية طباعة جديدة ومسح البيانات الحالية؟' : 'Start a new print job and clear current input?')) {
       createNewJob();
     }
   };
@@ -78,7 +85,7 @@ export const Header: React.FC = () => {
         <div>
           <div className="flex items-center gap-1.5">
             <h1 className="text-xs font-black tracking-tight text-slate-900 dark:text-slate-100 font-sans">
-              StickerPrint
+              {t('appTitle')}
             </h1>
             <span className="text-[9px] font-mono font-bold bg-sky-500/10 text-sky-600 dark:text-sky-400 px-1.5 py-0.5 rounded border border-sky-500/20">
               A4 PRECISION
@@ -95,7 +102,7 @@ export const Header: React.FC = () => {
             onClick={undo}
             disabled={!canUndo()}
             className="p-1.5 rounded text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none transition-colors"
-            title="تراجع (Ctrl+Z)"
+            title={t('undo')}
           >
             <Undo2 className="w-3.5 h-3.5" />
           </button>
@@ -103,7 +110,7 @@ export const Header: React.FC = () => {
             onClick={redo}
             disabled={!canRedo()}
             className="p-1.5 rounded text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none transition-colors"
-            title="إعادة (Ctrl+Shift+Z)"
+            title={t('redo')}
           >
             <Redo2 className="w-3.5 h-3.5" />
           </button>
@@ -115,37 +122,37 @@ export const Header: React.FC = () => {
         <button
           onClick={handleNewJob}
           className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-colors flex items-center gap-1"
-          title="مشروع جديد"
+          title={t('newProjectTitle')}
         >
           <Plus className="w-3.5 h-3.5 text-slate-400" />
-          <span className="hidden md:inline">جديد</span>
+          <span className="hidden md:inline">{t('newProject')}</span>
         </button>
 
         <button
           onClick={() => setRecentJobsModalOpen(true)}
           className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-colors flex items-center gap-1"
-          title="حفظ / فتح المشاريع"
+          title={t('projectsTitle')}
         >
           <FolderOpen className="w-3.5 h-3.5 text-slate-400" />
-          <span className="hidden md:inline">المشاريع</span>
+          <span className="hidden md:inline">{t('projects')}</span>
         </button>
 
         <button
           onClick={() => setTemplatesModalOpen(true)}
           className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-colors flex items-center gap-1"
-          title="قوالب الاستيكرات"
+          title={t('templatesTitle')}
         >
           <Layout className="w-3.5 h-3.5 text-slate-400" />
-          <span className="hidden md:inline">القوالب</span>
+          <span className="hidden md:inline">{t('templates')}</span>
         </button>
 
         <button
           onClick={() => setCalibrationModalOpen(true)}
           className="px-2 py-1 rounded-md text-[11px] font-medium text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/40 border border-transparent hover:border-sky-300 dark:hover:border-sky-800 transition-colors flex items-center gap-1"
-          title="معايرة الطابعة الفيزيائية"
+          title={t('calibrationTitle')}
         >
           <Compass className="w-3.5 h-3.5 text-sky-500" />
-          <span className="hidden md:inline">المعايرة</span>
+          <span className="hidden md:inline">{t('calibration')}</span>
         </button>
       </div>
 
@@ -154,17 +161,17 @@ export const Header: React.FC = () => {
         {/* Language switcher */}
         <button
           onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
-          className="p-1 px-1.5 rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 text-[10px] font-mono font-bold transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
-          title="تبديل اللغة / Switch Language"
+          className="p-1 px-2 rounded-md text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 bg-slate-100/70 hover:bg-slate-200/80 dark:bg-slate-800/70 dark:hover:bg-slate-700/80 text-[11px] font-mono font-bold transition-all border border-slate-200 dark:border-slate-700 flex items-center gap-1"
+          title={language === 'ar' ? 'Switch interface to English' : 'تحويل الواجهة إلى العربية'}
         >
-          {language === 'ar' ? 'EN' : 'عربي'}
+          <span className="text-sky-500 dark:text-sky-400 font-bold">{language === 'ar' ? 'EN' : 'عربي'}</span>
         </button>
 
         {/* Theme toggle */}
         <button
           onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
           className="p-1.5 rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          title="الوضع الليلي / النهاري"
+          title={t('themeToggle')}
         >
           {theme === 'light' ? <Moon className="w-3.5 h-3.5" /> : <Sun className="w-3.5 h-3.5" />}
         </button>
@@ -173,7 +180,7 @@ export const Header: React.FC = () => {
         <button
           onClick={() => setHelpModalOpen(true)}
           className="p-1.5 rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          title="دليل الاستخدام"
+          title={t('help')}
         >
           <HelpCircle className="w-3.5 h-3.5" />
         </button>
@@ -184,16 +191,17 @@ export const Header: React.FC = () => {
         <button
           onClick={() => setPrintPreviewOpen(true)}
           className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-colors"
+          title={t('previewAndPrint')}
         >
           <Eye className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-          <span className="hidden sm:inline">معاينة</span>
+          <span className="hidden sm:inline">{language === 'ar' ? 'معاينة' : 'Preview'}</span>
         </button>
 
         {/* Export PDF Button */}
         <button
           onClick={handleExportPDF}
           className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-700 text-slate-100 text-xs font-semibold transition-colors"
-          title="تصدير ملف PDF متجهات للطباعة"
+          title="Vector PDF"
         >
           <FileDown className="w-3.5 h-3.5 text-slate-300" />
           <span className="hidden sm:inline">PDF</span>
@@ -205,7 +213,7 @@ export const Header: React.FC = () => {
           className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold shadow-xs transition-colors"
         >
           <Printer className="w-3.5 h-3.5" />
-          <span>طباعة</span>
+          <span>{language === 'ar' ? 'طباعة' : 'Print'}</span>
         </button>
       </div>
     </header>

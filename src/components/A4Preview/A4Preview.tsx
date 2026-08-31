@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { usePrintStore } from '../../store/usePrintStore';
+import { useTranslation } from '../../lib/i18n';
 import { calculateGeometry, mmToPx } from '../../lib/geometry';
 import { RulerLeft, RulerTop } from './Rulers';
 import { StickerCard } from './StickerCard';
@@ -36,8 +37,10 @@ export const A4Preview: React.FC = () => {
     redo,
     getActivePageLayout,
     currentPageIndex,
+    language,
   } = usePrintStore();
 
+  const { t } = useTranslation(language);
   const geometry = calculateGeometry(template);
   const activePage = getActivePageLayout();
 
@@ -119,17 +122,17 @@ export const A4Preview: React.FC = () => {
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
             <Eye className="w-3.5 h-3.5 text-sky-500" />
-            <span>معاينة A4</span>
+            <span>{t('previewTitle')}</span>
           </span>
           <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
-            {geometry.pageWidth} × {geometry.pageHeight} مم ({template.orientation === 'landscape' ? 'أفقي' : 'عمودي'})
+            {geometry.pageWidth} × {geometry.pageHeight} {language === 'ar' ? 'مم' : 'mm'} ({template.orientation === 'landscape' ? (language === 'ar' ? 'أفقي' : 'Landscape') : (language === 'ar' ? 'عمودي' : 'Portrait')})
           </span>
           <button
             onClick={() => usePrintStore.getState().updateTemplateField('flowDirection', template.flowDirection === 'ltr' ? 'rtl' : 'ltr')}
             className="text-[10px] font-medium text-sky-600 dark:text-sky-400 bg-sky-500/10 hover:bg-sky-500/20 px-2 py-0.5 rounded border border-sky-500/30 transition-colors flex items-center gap-1"
-            title="تبديل اتجاه بدء الترقيم بين اليمين واليسار"
+            title={language === 'ar' ? 'تبديل اتجاه بدء الترقيم بين اليمين واليسار' : 'Toggle flow direction (LTR / RTL)'}
           >
-            <span>{template.flowDirection === 'ltr' ? '⬅️ من اليسار' : '➡️ من اليمين'}</span>
+            <span>{template.flowDirection === 'ltr' ? (language === 'ar' ? '⬅️ من اليسار' : '⬅️ From Left') : (language === 'ar' ? '➡️ من اليمين' : '➡️ From Right')}</span>
           </button>
         </div>
 
@@ -142,10 +145,10 @@ export const A4Preview: React.FC = () => {
                 ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-2xs font-bold'
                 : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
-            title="إظهار/إخفاء حدود الاستيكرات"
+            title={language === 'ar' ? 'إظهار/إخفاء حدود الاستيكرات' : 'Show/Hide Grid'}
           >
             <Grid className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline text-[10px]">الشبكة</span>
+            <span className="hidden sm:inline text-[10px]">{language === 'ar' ? 'الشبكة' : 'Grid'}</span>
           </button>
 
           <button
@@ -155,10 +158,10 @@ export const A4Preview: React.FC = () => {
                 ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-2xs font-bold'
                 : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
-            title="إظهار/إخفاء المساطر المليمترية"
+            title={language === 'ar' ? 'إظهار/إخفاء المساطر المليمترية' : 'Show/Hide Rulers'}
           >
             <RulerIcon className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline text-[10px]">المسطرة</span>
+            <span className="hidden sm:inline text-[10px]">{language === 'ar' ? 'المسطرة' : 'Ruler'}</span>
           </button>
 
           <button
@@ -168,10 +171,10 @@ export const A4Preview: React.FC = () => {
                 ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-2xs font-bold'
                 : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
-            title="إظهار/إخفاء أرقام الاستيكرات"
+            title={language === 'ar' ? 'إظهار/إخفاء أرقام الاستيكرات' : 'Show/Hide Index Badges'}
           >
             <Tag className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline text-[10px]">الترقيم</span>
+            <span className="hidden sm:inline text-[10px]">{language === 'ar' ? 'الترقيم' : 'Indexes'}</span>
           </button>
 
           <div className="w-[1px] h-3.5 bg-slate-300 dark:bg-slate-700 mx-0.5" />
@@ -180,7 +183,7 @@ export const A4Preview: React.FC = () => {
           <button
             onClick={() => setZoomScale(zoomScale - 0.15)}
             className="p-1 rounded text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-            title="تصغير"
+            title={t('zoomOut')}
           >
             <ZoomOut className="w-3 h-3" />
           </button>
@@ -192,7 +195,7 @@ export const A4Preview: React.FC = () => {
           <button
             onClick={() => setZoomScale(zoomScale + 0.15)}
             className="p-1 rounded text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-            title="تكبير"
+            title={t('zoomIn')}
           >
             <ZoomIn className="w-3 h-3" />
           </button>
@@ -200,7 +203,7 @@ export const A4Preview: React.FC = () => {
           <button
             onClick={handleFitToScreen}
             className="p-1 rounded text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-            title="ملاءمة الشاشة"
+            title={t('fitScreen')}
           >
             <Maximize2 className="w-3 h-3" />
           </button>
@@ -223,7 +226,7 @@ export const A4Preview: React.FC = () => {
           <div className="max-w-md w-full mb-4 p-3 rounded-md bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 flex items-start gap-2.5">
             <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
             <div>
-              <div className="font-bold text-xs">أبعاد القالب غير متطابقة مع حجم الورقة</div>
+              <div className="font-bold text-xs">{language === 'ar' ? 'أبعاد القالب غير متطابقة مع حجم الورقة' : 'Template dimensions exceed paper size'}</div>
               <ul className="text-[11px] list-disc list-inside mt-0.5 space-y-0.5">
                 {geometry.errors.map((err, i) => (
                   <li key={i}>{err}</li>
@@ -299,11 +302,11 @@ export const A4Preview: React.FC = () => {
 
         {/* Bottom Helper Info */}
         <div className="mt-4 text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-3 flex-wrap justify-center font-mono">
-          <span>💡 تحديد وضبط بالأسهم</span>
+          <span>{language === 'ar' ? '💡 تحديد وضبط بالأسهم' : '💡 Select & nudge with arrows'}</span>
           <span>•</span>
-          <span>🖱️ نقر مزدوج = تبديل مستعمل</span>
+          <span>{language === 'ar' ? '🖱️ نقر مزدوج = تبديل مستعمل' : '🖱️ Double click = mark used'}</span>
           <span>•</span>
-          <span>✋ سحب للتحريك بالمليمتر</span>
+          <span>{language === 'ar' ? '✋ سحب للتحريك بالمليمتر' : '✋ Drag & drop to move'}</span>
         </div>
       </div>
     </div>

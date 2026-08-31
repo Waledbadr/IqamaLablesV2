@@ -19,6 +19,7 @@ export const PrintPreviewModal: React.FC = () => {
     template,
     calibration,
     getAssignmentResult,
+    triggerPostPrintWorkflow,
   } = usePrintStore();
 
   const [showOutlines, setShowOutlines] = useState(false);
@@ -40,6 +41,10 @@ export const PrintPreviewModal: React.FC = () => {
       pages: assignment.pages,
       calibration,
     });
+    setPrintPreviewOpen(false);
+    setTimeout(() => {
+      triggerPostPrintWorkflow();
+    }, 600);
   };
 
   const handleExportPDF = () => {
@@ -51,6 +56,10 @@ export const PrintPreviewModal: React.FC = () => {
     });
     const safeName = (template.name || 'stickers').replace(/[^a-zA-Z0-9_\u0600-\u06FF]/g, '_');
     doc.save(`StickerPrint_${safeName}_${Date.now()}.pdf`);
+    setPrintPreviewOpen(false);
+    setTimeout(() => {
+      triggerPostPrintWorkflow();
+    }, 600);
   };
 
   return (

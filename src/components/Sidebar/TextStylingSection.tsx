@@ -1,5 +1,6 @@
 import React from 'react';
 import { usePrintStore } from '../../store/usePrintStore';
+import { useTranslation } from '../../lib/i18n';
 import {
   Bold,
   Italic,
@@ -12,15 +13,16 @@ import {
 } from 'lucide-react';
 
 export const TextStylingSection: React.FC = () => {
-  const { template, updateTemplateField } = usePrintStore();
+  const { template, updateTemplateField, language } = usePrintStore();
+  const { t } = useTranslation(language);
 
   const fontFamilies = [
-    { label: 'Cairo (الافتراضي)', value: 'Cairo' },
+    { label: language === 'ar' ? 'Cairo (الافتراضي)' : 'Cairo (Default)', value: 'Cairo' },
     { label: 'Tajawal', value: 'Tajawal' },
     { label: 'IBM Plex Sans Arabic', value: 'IBM Plex Sans Arabic' },
-    { label: 'JetBrains Mono (أرقام موحدة)', value: 'JetBrains Mono' },
+    { label: language === 'ar' ? 'JetBrains Mono (أرقام موحدة)' : 'JetBrains Mono (Monospace)', value: 'JetBrains Mono' },
     { label: 'Arial', value: 'Arial' },
-    { label: 'Courier (آلة كاتبة)', value: 'Courier' },
+    { label: language === 'ar' ? 'Courier (آلة كاتبة)' : 'Courier (Typewriter)', value: 'Courier' },
   ];
 
   return (
@@ -28,7 +30,7 @@ export const TextStylingSection: React.FC = () => {
       {/* Font Family */}
       <div>
         <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
-          نوع الخط (Font Family)
+          {t('fontFamily')}
         </label>
         <select
           value={template.fontFamily}
@@ -47,7 +49,7 @@ export const TextStylingSection: React.FC = () => {
       <div>
         <div className="flex items-center justify-between mb-1">
           <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-            حجم الخط والنمط (Font Size)
+            {t('fontSize')}
           </label>
           <span className="text-[11px] font-mono font-bold text-sky-600 dark:text-sky-400">
             {template.fontSize} pt
@@ -87,7 +89,7 @@ export const TextStylingSection: React.FC = () => {
                 ? 'bg-sky-500/10 border-sky-500/40 text-sky-600 dark:text-sky-400'
                 : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40'
             }`}
-            title="عريض (Bold)"
+            title={language === 'ar' ? 'عريض (Bold)' : 'Bold'}
           >
             <Bold className="w-3.5 h-3.5" />
           </button>
@@ -100,7 +102,7 @@ export const TextStylingSection: React.FC = () => {
                 ? 'bg-sky-500/10 border-sky-500/40 text-sky-600 dark:text-sky-400'
                 : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40'
             }`}
-            title="مائل (Italic)"
+            title={language === 'ar' ? 'مائل (Italic)' : 'Italic'}
           >
             <Italic className="w-3.5 h-3.5" />
           </button>
@@ -110,7 +112,7 @@ export const TextStylingSection: React.FC = () => {
       {/* Alignment Controls */}
       <div>
         <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
-          محاذاة النص داخل الاستيكر
+          {t('textAlign')}
         </label>
         <div className="grid grid-cols-2 gap-1.5">
           {/* Horizontal Alignment */}
@@ -122,7 +124,7 @@ export const TextStylingSection: React.FC = () => {
                   ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-2xs'
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
-              title="محاذاة لليمين"
+              title={language === 'ar' ? 'محاذاة لليمين' : 'Align Right'}
             >
               <AlignRight className="w-3.5 h-3.5" />
             </button>
@@ -133,7 +135,7 @@ export const TextStylingSection: React.FC = () => {
                   ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-2xs'
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
-              title="توسيط أفقي"
+              title={language === 'ar' ? 'توسيط أفقي' : 'Align Center'}
             >
               <AlignCenter className="w-3.5 h-3.5" />
             </button>
@@ -144,7 +146,7 @@ export const TextStylingSection: React.FC = () => {
                   ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-2xs'
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
-              title="محاذاة لليسار"
+              title={language === 'ar' ? 'محاذاة لليسار' : 'Align Left'}
             >
               <AlignLeft className="w-3.5 h-3.5" />
             </button>
@@ -159,7 +161,7 @@ export const TextStylingSection: React.FC = () => {
                   ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-2xs'
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
-              title="أعلى"
+              title={language === 'ar' ? 'أعلى' : 'Top'}
             >
               <AlignVerticalJustifyStart className="w-3.5 h-3.5" />
             </button>
@@ -170,7 +172,7 @@ export const TextStylingSection: React.FC = () => {
                   ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-2xs'
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
-              title="توسيط رأسي"
+              title={language === 'ar' ? 'توسيط رأسي' : 'Middle'}
             >
               <AlignVerticalJustifyCenter className="w-3.5 h-3.5" />
             </button>
@@ -181,7 +183,7 @@ export const TextStylingSection: React.FC = () => {
                   ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-2xs'
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
-              title="أسفل"
+              title={language === 'ar' ? 'أسفل' : 'Bottom'}
             >
               <AlignVerticalJustifyEnd className="w-3.5 h-3.5" />
             </button>
@@ -192,23 +194,23 @@ export const TextStylingSection: React.FC = () => {
       {/* Static Prefix and Suffix */}
       <div className="grid grid-cols-2 gap-1.5 text-xs">
         <div>
-          <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">نص بادئ (Prefix)</span>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">{t('prefix')}</span>
           <input
             type="text"
             value={template.prefix || ''}
             onChange={(e) => updateTemplateField('prefix', e.target.value)}
-            placeholder="مثال: رقم: "
+            placeholder={language === 'ar' ? 'مثال: رقم: ' : 'e.g. ID: '}
             className="w-full text-xs font-mono p-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
           />
         </div>
 
         <div>
-          <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">نص لاحق (Suffix)</span>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">{t('suffix')}</span>
           <input
             type="text"
             value={template.suffix || ''}
             onChange={(e) => updateTemplateField('suffix', e.target.value)}
-            placeholder="مثال: #"
+            placeholder="e.g. #"
             className="w-full text-xs font-mono p-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
           />
         </div>
@@ -217,7 +219,7 @@ export const TextStylingSection: React.FC = () => {
       {/* Text & Background Colors */}
       <div className="grid grid-cols-2 gap-1.5 text-xs">
         <div>
-          <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">لون النص (Color)</span>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">{t('textColor')}</span>
           <div className="flex items-center gap-1">
             <input
               type="color"
@@ -235,7 +237,7 @@ export const TextStylingSection: React.FC = () => {
         </div>
 
         <div>
-          <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">استدارة الزوايا (Radius)</span>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">{t('cornerRadius')}</span>
           <div className="flex items-center">
             <input
               type="number"
@@ -246,7 +248,7 @@ export const TextStylingSection: React.FC = () => {
               onChange={(e) => updateTemplateField('cornerRadiusMm', Number(e.target.value))}
               className="w-full text-xs font-mono p-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
             />
-            <span className="text-[10px] font-mono text-slate-400 ms-1">مم</span>
+            <span className="text-[10px] font-mono text-slate-400 ms-1">mm</span>
           </div>
         </div>
       </div>

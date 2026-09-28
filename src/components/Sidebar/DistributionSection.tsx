@@ -3,6 +3,7 @@ import { usePrintStore } from '../../store/usePrintStore';
 import { useTranslation } from '../../lib/i18n';
 import { calculateGeometry } from '../../lib/geometry';
 import { Play, Ban, CheckCircle, RotateCcw, ArrowRightLeft, Sparkles } from 'lucide-react';
+import { NumericInput } from '../common/NumericInput';
 
 export const DistributionSection: React.FC = () => {
   const {
@@ -121,12 +122,13 @@ export const DistributionSection: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <input
-            type="number"
-            min="1"
+          <NumericInput
+            min={1}
             max={Math.max(1, geometry.totalStickers)}
+            step={1}
+            fallbackValue={1}
             value={startPosition}
-            onChange={(e) => setStartPosition(Math.max(1, Number(e.target.value)))}
+            onChange={(val) => setStartPosition(val)}
             className="w-20 text-xs font-mono font-bold p-1.5 rounded-md border border-sky-500/30 bg-white dark:bg-slate-950 text-sky-600 dark:text-sky-400 outline-none focus:ring-1 focus:ring-sky-500 text-center"
           />
           <button

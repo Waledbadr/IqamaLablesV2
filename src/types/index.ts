@@ -4,6 +4,23 @@ export type StickerState = 'available' | 'used' | 'assigned';
 export type TextAlign = 'center' | 'left' | 'right';
 export type VerticalAlign = 'middle' | 'top' | 'bottom';
 export type FontWeight = 'normal' | '500' | '600' | 'bold' | '800';
+export type MeasurementUnit = 'mm' | 'cm' | 'in';
+
+export type DimensionHighlightKey =
+  | 'paperWidth'
+  | 'paperHeight'
+  | 'marginTop'
+  | 'marginBottom'
+  | 'marginLeft'
+  | 'marginRight'
+  | 'stickerWidth'
+  | 'stickerHeight'
+  | 'horizontalGap'
+  | 'verticalGap'
+  | 'columns'
+  | 'rows'
+  | 'globalOffsetX'
+  | 'globalOffsetY';
 
 export interface StickerTemplate {
   id: string;

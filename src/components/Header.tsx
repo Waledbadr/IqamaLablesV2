@@ -17,6 +17,7 @@ import {
   Plus,
   Eye,
 } from 'lucide-react';
+import { UnitSelector } from './common/UnitSelector';
 
 export const Header: React.FC = () => {
   const {
@@ -157,7 +158,10 @@ export const Header: React.FC = () => {
       </div>
 
       {/* Right Tools: Preferences, Preview & Print */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1.5">
+        {/* Unit Selector: mm / cm / in */}
+        <UnitSelector size="xs" />
+
         {/* Language switcher */}
         <button
           onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')}

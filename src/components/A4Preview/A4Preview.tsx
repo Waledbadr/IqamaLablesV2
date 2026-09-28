@@ -5,6 +5,9 @@ import { calculateGeometry, mmToPx } from '../../lib/geometry';
 import { RulerLeft, RulerTop } from './Rulers';
 import { StickerCard } from './StickerCard';
 import { PageNavigation } from './PageNavigation';
+import { DimensionOverlay } from './DimensionOverlay';
+import { formatUnitValue } from '../../lib/units';
+import { UnitSelector } from '../common/UnitSelector';
 import {
   ZoomIn,
   ZoomOut,
@@ -14,6 +17,7 @@ import {
   Ruler as RulerIcon,
   Tag,
   AlertTriangle,
+  Compass,
 } from 'lucide-react';
 
 export const A4Preview: React.FC = () => {
@@ -28,6 +32,9 @@ export const A4Preview: React.FC = () => {
     setShowRulers,
     showIndexBadges,
     setShowIndexBadges,
+    showDimensionGuides,
+    toggleShowDimensionGuides,
+    activeDimensionHighlight,
     selectedStickerIndex,
     setSelectedStickerIndex,
     toggleStickerUsed,
@@ -37,6 +44,7 @@ export const A4Preview: React.FC = () => {
     redo,
     getActivePageLayout,
     currentPageIndex,
+    measurementUnit,
     language,
   } = usePrintStore();
 
@@ -137,7 +145,7 @@ export const A4Preview: React.FC = () => {
           </span>
           <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
             <strong className="text-sky-600 dark:text-sky-400 me-1">{paperFormatLabel}</strong>
-            {geometry.pageWidth} × {geometry.pageHeight} {language === 'ar' ? 'مم' : 'mm'} ({template.orientation === 'landscape' ? (language === 'ar' ? 'أفقي' : 'Landscape') : (language === 'ar' ? 'عمودي' : 'Portrait')})
+            {formatUnitValue(geometry.pageWidth, measurementUnit, language)} × {formatUnitValue(geometry.pageHeight, measurementUnit, language)} ({template.orientation === 'landscape' ? (language === 'ar' ? 'أفقي' : 'Landscape') : (language === 'ar' ? 'عمودي' : 'Portrait')})
           </span>
           <button
             onClick={() => usePrintStore.getState().updateTemplateField('flowDirection', template.flowDirection === 'ltr' ? 'rtl' : 'ltr')}
@@ -188,6 +196,24 @@ export const A4Preview: React.FC = () => {
             <Tag className="w-3.5 h-3.5" />
             <span className="hidden sm:inline text-[10px]">{language === 'ar' ? 'الترقيم' : 'Indexes'}</span>
           </button>
+
+          <button
+            onClick={() => toggleShowDimensionGuides()}
+            className={`p-1 rounded text-xs flex items-center gap-1 transition-colors ${
+              showDimensionGuides
+                ? 'bg-amber-500 text-slate-950 font-bold shadow-2xs'
+                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+            title={language === 'ar' ? 'إظهار/إخفاء خطوط القياس والمعايرة بالكامل (المسافات بين الأعمدة والهوامش والأبعاد)' : 'Show/Hide Dimension Calibration Guides'}
+          >
+            <Compass className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline text-[10px]">{language === 'ar' ? 'أبعاد المعايرة' : 'Dimensions'}</span>
+          </button>
+
+          <div className="w-[1px] h-3.5 bg-slate-300 dark:bg-slate-700 mx-0.5" />
+
+          {/* Unit Switcher: mm / cm / in */}
+          <UnitSelector size="xs" />
 
           <div className="w-[1px] h-3.5 bg-slate-300 dark:bg-slate-700 mx-0.5" />
 
@@ -248,6 +274,44 @@ export const A4Preview: React.FC = () => {
           </div>
         )}
 
+        {/* Active Dimension Calibration Banner */}
+        {activeDimensionHighlight && (
+          <div className="mb-2.5 px-3.5 py-1.5 bg-amber-500/15 border border-amber-500/40 rounded-full text-amber-900 dark:text-amber-200 text-xs font-bold flex items-center gap-2 shadow-xs transition-all animate-pulse">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
+            <span>
+              {language === 'ar'
+                ? `معاينة حية: تم تحديد (${
+                    activeDimensionHighlight === 'paperWidth'
+                      ? 'عرض الورقة'
+                      : activeDimensionHighlight === 'paperHeight'
+                      ? 'طول الورقة'
+                      : activeDimensionHighlight === 'horizontalGap'
+                      ? 'المسافة بين الأعمدة'
+                      : activeDimensionHighlight === 'verticalGap'
+                      ? 'المسافة بين الصفوف'
+                      : activeDimensionHighlight === 'stickerWidth'
+                      ? 'عرض الاستيكر'
+                      : activeDimensionHighlight === 'stickerHeight'
+                      ? 'ارتفاع الاستيكر'
+                      : activeDimensionHighlight === 'marginTop'
+                      ? 'الهامش العلوي'
+                      : activeDimensionHighlight === 'marginBottom'
+                      ? 'الهامش السفلي'
+                      : activeDimensionHighlight === 'marginLeft'
+                      ? 'الهامش الأيسر'
+                      : activeDimensionHighlight === 'marginRight'
+                      ? 'الهامش الأيمن'
+                      : activeDimensionHighlight === 'columns'
+                      ? 'عدد الأعمدة'
+                      : activeDimensionHighlight === 'rows'
+                      ? 'عدد الصفوف'
+                      : activeDimensionHighlight
+                  }) ويتم تمثيله بالرقم والمؤشرات على الورقة الآن`
+                : `Live Calibration: Highlighting ${activeDimensionHighlight} on sheet`}
+            </span>
+          </div>
+        )}
+
         {/* Interactive A4 Sheet Container */}
         {geometry.isValid && (
           <div
@@ -260,8 +324,8 @@ export const A4Preview: React.FC = () => {
             {/* Top Ruler */}
             {showRulers && (
               <div className="flex">
-                <div className="w-6 h-6 bg-slate-200 dark:bg-slate-800 border-b border-r border-slate-300 dark:border-slate-700 text-[8px] flex items-center justify-center font-mono text-slate-500 dark:text-slate-400">
-                  mm
+                <div className="w-6 h-6 bg-slate-200 dark:bg-slate-800 border-b border-r border-slate-300 dark:border-slate-700 text-[8px] flex items-center justify-center font-mono text-slate-600 dark:text-slate-300 font-bold uppercase">
+                  {measurementUnit}
                 </div>
                 <RulerTop lengthMm={geometry.pageWidth} zoomScale={zoomScale} />
               </div>
@@ -274,7 +338,7 @@ export const A4Preview: React.FC = () => {
               {/* Physical A4 Paper */}
               <div
                 id="a4-physical-sheet"
-                className="relative bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-md overflow-hidden select-none"
+                className="relative bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-md select-none overflow-visible"
                 style={{
                   width: `${paperWidthPx}px`,
                   height: `${paperHeightPx}px`,
@@ -307,6 +371,16 @@ export const A4Preview: React.FC = () => {
                     onToggleUsed={() => toggleStickerUsed(currentPageIndex, sticker.index)}
                   />
                 ))}
+
+                {/* Live Calibration & Dimension Guides Overlay */}
+                <DimensionOverlay
+                  template={template}
+                  geometry={geometry}
+                  zoomScale={zoomScale}
+                  language={language}
+                  activeHighlight={activeDimensionHighlight}
+                  showAllGuides={showDimensionGuides}
+                />
               </div>
             </div>
           </div>

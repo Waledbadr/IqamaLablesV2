@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import {
+  DimensionHighlightKey,
   Language,
+  MeasurementUnit,
   PageLayout,
   PrinterCalibration,
   PrintJob,
@@ -61,6 +63,9 @@ export interface PrintStoreState {
   showGrid: boolean;
   showRulers: boolean;
   showIndexBadges: boolean;
+  showDimensionGuides: boolean;
+  activeDimensionHighlight: DimensionHighlightKey | null;
+  measurementUnit: MeasurementUnit;
   language: Language;
   theme: ThemeMode;
   toastMessage: string | null;
@@ -159,6 +164,10 @@ export interface PrintStoreState {
   setShowGrid: (show: boolean) => void;
   setShowRulers: (show: boolean) => void;
   setShowIndexBadges: (show: boolean) => void;
+  setShowDimensionGuides: (show: boolean) => void;
+  toggleShowDimensionGuides: () => void;
+  setActiveDimensionHighlight: (field: DimensionHighlightKey | null) => void;
+  setMeasurementUnit: (unit: MeasurementUnit) => void;
   setLanguage: (lang: Language) => void;
   setTheme: (theme: ThemeMode) => void;
 
@@ -232,6 +241,9 @@ export const usePrintStore = create<PrintStoreState>((set, get) => ({
   showGrid: initialSettings.showGrid !== false,
   showRulers: initialSettings.showRulers !== false,
   showIndexBadges: initialSettings.showIndexBadges !== false,
+  showDimensionGuides: false,
+  activeDimensionHighlight: null,
+  measurementUnit: initialSettings.measurementUnit || 'mm',
   language: initialSettings.language || 'ar',
   theme: initialSettings.theme || 'light',
   toastMessage: null,
@@ -1058,6 +1070,19 @@ export const usePrintStore = create<PrintStoreState>((set, get) => ({
   setShowIndexBadges: (show) => {
     saveSettings({ showIndexBadges: show });
     set({ showIndexBadges: show });
+  },
+  setShowDimensionGuides: (show) => {
+    set({ showDimensionGuides: show });
+  },
+  toggleShowDimensionGuides: () => {
+    set((state) => ({ showDimensionGuides: !state.showDimensionGuides }));
+  },
+  setActiveDimensionHighlight: (field) => {
+    set({ activeDimensionHighlight: field });
+  },
+  setMeasurementUnit: (unit) => {
+    saveSettings({ measurementUnit: unit });
+    set({ measurementUnit: unit });
   },
   setLanguage: (lang) => {
     saveSettings({ language: lang });

@@ -3,7 +3,10 @@ import { usePrintStore } from '../../store/usePrintStore';
 import { useTranslation } from '../../lib/i18n';
 import { calculateGeometry } from '../../lib/geometry';
 import { PageOrientation } from '../../types';
-import { Star, Check, Sparkles, FileText, AlertTriangle, Info, Maximize2 } from 'lucide-react';
+import { Star, Check, Sparkles, FileText, AlertTriangle, Info, Maximize2, Ruler } from 'lucide-react';
+import { NumericInput } from '../common/NumericInput';
+import { formatDimensions, formatUnitValue, getStandardPaperLabel, getUnitFullLabel, getUnitLabel } from '../../lib/units';
+import { UnitSelector } from '../common/UnitSelector';
 
 export const SheetSettingsSection: React.FC = () => {
   const {
@@ -16,11 +19,16 @@ export const SheetSettingsSection: React.FC = () => {
     setDefaultTemplate,
     pinCurrentTemplateAsDefault,
     updateCurrentTemplateInPlace,
+    setActiveDimensionHighlight,
+    measurementUnit,
     language,
   } = usePrintStore();
 
   const { t } = useTranslation(language);
   const geometry = calculateGeometry(template);
+  const isAr = language === 'ar';
+  const unitLabel = getUnitLabel(measurementUnit, language);
+  const unitFullLabel = getUnitFullLabel(measurementUnit, language);
 
   const handlePresetChange = (templateId: string) => {
     if (templateId === 'manage') {
@@ -74,7 +82,26 @@ export const SheetSettingsSection: React.FC = () => {
   };
 
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-3">
+      {/* 1. Dedicated Measurement Unit Selection Box */}
+      <div className="p-2.5 rounded-lg bg-sky-50/80 dark:bg-sky-950/40 border-2 border-sky-300 dark:border-sky-800 shadow-xs space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="text-[11px] font-bold text-sky-950 dark:text-sky-200 flex items-center gap-1.5">
+            <Ruler className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+            <span>{isAr ? 'وحدة القياس المعتمدة للمشروع:' : 'Project Measurement Unit:'}</span>
+          </label>
+          <span className="text-[10px] font-mono font-black px-2 py-0.5 rounded bg-sky-500 text-slate-950 shadow-2xs">
+            {unitFullLabel}
+          </span>
+        </div>
+        <p className="text-[10px] text-sky-900/80 dark:text-sky-200/80 leading-relaxed">
+          {isAr
+            ? 'تتغير مسميات وأرقام جميع حقول الورقة والاستيكرات والهوامش فوراً حسب هذه الوحدة.'
+            : 'All field labels, sheet dimensions, and margins convert automatically to this unit.'}
+        </p>
+        <UnitSelector size="sm" variant="full" className="w-full pt-0.5" />
+      </div>
+
       {/* Preset Selector */}
       <div>
         <div className="flex items-center justify-between mb-1">
@@ -85,7 +112,7 @@ export const SheetSettingsSection: React.FC = () => {
             onClick={() => setTemplatesModalOpen(true)}
             className="text-[10px] text-sky-600 dark:text-sky-400 hover:underline"
           >
-            {language === 'ar' ? 'إدارة القوالب' : 'Manage Templates'}
+            {isAr ? 'إدارة القوالب' : 'Manage Templates'}
           </button>
         </div>
 
@@ -97,10 +124,10 @@ export const SheetSettingsSection: React.FC = () => {
           {savedTemplates.map((tpl, idx) => (
             <option key={`${tpl.id}-${idx}`} value={tpl.id}>
               {tpl.id === defaultTemplateId ? '★ ' : ''}
-              {language === 'ar' ? tpl.name : (tpl.nameEn || tpl.name)}
+              {isAr ? tpl.name : (tpl.nameEn || tpl.name)}
             </option>
           ))}
-          <option value="manage">{language === 'ar' ? '⚙️ إدارة وحفظ القوالب المخصصة...' : '⚙️ Manage & Save Custom Templates...'}</option>
+          <option value="manage">{isAr ? '⚙️ إدارة وحفظ القوالب المخصصة...' : '⚙️ Manage & Save Custom Templates...'}</option>
         </select>
 
         {/* Pin Template & Styling as Permanent Default */}
@@ -128,7 +155,7 @@ export const SheetSettingsSection: React.FC = () => {
             className="text-[10px] text-slate-500 hover:text-sky-600 dark:hover:text-sky-400 hover:underline ms-auto"
             title="حفظ التعديلات والتنسيق الحالي على القالب"
           >
-            {language === 'ar' ? 'حفظ التنسيق الحالي' : 'Save Style'}
+            {isAr ? 'حفظ التنسيق الحالي' : 'Save Style'}
           </button>
         </div>
       </div>
@@ -138,10 +165,10 @@ export const SheetSettingsSection: React.FC = () => {
         <div className="flex items-center justify-between">
           <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
             <FileText className="w-3.5 h-3.5 text-sky-500" />
-            <span>{t('paperDimensions')}</span>
+            <span>{t('paperDimensions')} ({unitLabel})</span>
           </label>
           <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
-            {template.paperWidth} × {template.paperHeight} mm ({currentPaperStandard === 'Custom' ? (language === 'ar' ? 'مخصص' : 'Custom') : currentPaperStandard})
+            {formatDimensions(template.paperWidth, template.paperHeight, measurementUnit, language)} ({currentPaperStandard === 'Custom' ? (isAr ? 'مخصص' : 'Custom') : currentPaperStandard})
           </span>
         </div>
 
@@ -150,82 +177,99 @@ export const SheetSettingsSection: React.FC = () => {
           <button
             type="button"
             onClick={() => handleSelectPaperStandard('A4')}
-            className={`py-1 px-1.5 rounded text-[10px] font-bold border transition-all text-center ${
+            className={`py-1.5 px-1 rounded text-[10px] font-bold border transition-all text-center leading-tight ${
               currentPaperStandard === 'A4'
-                ? 'bg-sky-500 text-slate-950 border-sky-500 shadow-2xs font-extrabold'
+                ? 'bg-sky-500 text-slate-950 border-sky-500 shadow-2xs font-extrabold ring-1 ring-sky-400/50'
                 : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
-            title="210 × 297 mm"
+            title={formatDimensions(210, 297, measurementUnit, language)}
           >
-            A4 (210×297)
+            <div>A4</div>
+            <div className="text-[9px] opacity-80 font-mono font-normal">
+              {formatDimensions(210, 297, measurementUnit, language)}
+            </div>
           </button>
 
           <button
             type="button"
             onClick={() => handleSelectPaperStandard('A5')}
-            className={`py-1 px-1.5 rounded text-[10px] font-bold border transition-all text-center ${
+            className={`py-1.5 px-1 rounded text-[10px] font-bold border transition-all text-center leading-tight ${
               currentPaperStandard === 'A5'
-                ? 'bg-sky-500 text-slate-950 border-sky-500 shadow-2xs font-extrabold'
+                ? 'bg-sky-500 text-slate-950 border-sky-500 shadow-2xs font-extrabold ring-1 ring-sky-400/50'
                 : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
-            title="148 × 210 mm (ورقة أصغر من A4)"
+            title={`${formatDimensions(148, 210, measurementUnit, language)} (ورقة أصغر من A4)`}
           >
-            A5 (148×210)
+            <div>A5</div>
+            <div className="text-[9px] opacity-80 font-mono font-normal">
+              {formatDimensions(148, 210, measurementUnit, language)}
+            </div>
           </button>
 
           <button
             type="button"
             onClick={() => handleSelectPaperStandard('Letter')}
-            className={`py-1 px-1.5 rounded text-[10px] font-bold border transition-all text-center ${
+            className={`py-1.5 px-1 rounded text-[10px] font-bold border transition-all text-center leading-tight ${
               currentPaperStandard === 'Letter'
-                ? 'bg-sky-500 text-slate-950 border-sky-500 shadow-2xs font-extrabold'
+                ? 'bg-sky-500 text-slate-950 border-sky-500 shadow-2xs font-extrabold ring-1 ring-sky-400/50'
                 : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
-            title="216 × 279 mm"
+            title={formatDimensions(216, 279, measurementUnit, language)}
           >
-            Letter
+            <div>Letter</div>
+            <div className="text-[9px] opacity-80 font-mono font-normal">
+              {formatDimensions(216, 279, measurementUnit, language)}
+            </div>
           </button>
         </div>
 
-        {/* Exact Paper Width and Height Inputs in mm */}
+        {/* Exact Paper Width and Height Inputs */}
         <div className="grid grid-cols-2 gap-1.5 text-xs pt-1">
-          <div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">{t('paperWidth')}</span>
-            <div className="flex items-center">
-              <input
-                type="number"
-                step="0.5"
-                min="30"
-                max="1000"
-                value={template.paperWidth}
-                onChange={(e) => updateTemplateField('paperWidth', Math.max(10, Number(e.target.value)))}
-                className="w-full text-xs font-mono p-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
-              />
-              <span className="text-[10px] font-mono text-slate-400 ms-1">mm</span>
-            </div>
+          <div
+            onMouseEnter={() => setActiveDimensionHighlight('paperWidth')}
+            onMouseLeave={() => usePrintStore.getState().activeDimensionHighlight === 'paperWidth' && setActiveDimensionHighlight(null)}
+          >
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5 cursor-pointer hover:text-sky-600 transition-colors">
+              {t('paperWidth')} ({unitLabel})
+            </span>
+            <NumericInput
+              step="0.5"
+              min={30}
+              max={1000}
+              fallbackValue={210}
+              dimensionKey="paperWidth"
+              value={template.paperWidth}
+              onChange={(val) => updateTemplateField('paperWidth', val)}
+            />
           </div>
 
-          <div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">{t('paperHeight')}</span>
-            <div className="flex items-center">
-              <input
-                type="number"
-                step="0.5"
-                min="30"
-                max="1000"
-                value={template.paperHeight}
-                onChange={(e) => updateTemplateField('paperHeight', Math.max(10, Number(e.target.value)))}
-                className="w-full text-xs font-mono p-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
-              />
-              <span className="text-[10px] font-mono text-slate-400 ms-1">mm</span>
-            </div>
+          <div
+            onMouseEnter={() => setActiveDimensionHighlight('paperHeight')}
+            onMouseLeave={() => usePrintStore.getState().activeDimensionHighlight === 'paperHeight' && setActiveDimensionHighlight(null)}
+          >
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5 cursor-pointer hover:text-sky-600 transition-colors">
+              {t('paperHeight')} ({unitLabel})
+            </span>
+            <NumericInput
+              step="0.5"
+              min={30}
+              max={1000}
+              fallbackValue={297}
+              dimensionKey="paperHeight"
+              value={template.paperHeight}
+              onChange={(val) => updateTemplateField('paperHeight', val)}
+            />
           </div>
         </div>
 
         {/* Helpful Tip for sheets smaller than A4 */}
         <div className="p-1.5 rounded bg-sky-500/10 border border-sky-500/20 text-sky-800 dark:text-sky-300 text-[10px] flex items-start gap-1 leading-snug">
           <Info className="w-3.5 h-3.5 shrink-0 text-sky-500 mt-0.5" />
-          <span>{t('smallerThanA4Alert')}</span>
+          <span>
+            {isAr
+              ? `💡 ورقتك أصغر من A4؟ اختر A5 أو أدخل أبعاد الورقة بوحدة (${unitLabel}) مباشرة وسيتكيف التخطيط تلقائياً.`
+              : `💡 Sheet smaller than A4? Choose A5 or enter exact measurements in (${unitLabel}) for an automatic fit.`}
+          </span>
         </div>
 
         {/* Warning if Stickers Exceed Current Paper Dimensions */}
@@ -312,74 +356,82 @@ export const SheetSettingsSection: React.FC = () => {
         </div>
       </div>
 
-      {/* Margins (mm) */}
+      {/* Margins */}
       <div>
         <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
-          {t('margins')}
+          {t('margins')} ({unitLabel})
         </label>
         <div className="grid grid-cols-2 gap-1.5 text-xs">
-          <div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">{t('marginTop')}</span>
-            <div className="flex items-center">
-              <input
-                type="number"
-                step="0.5"
-                min="0"
-                max="100"
-                value={template.marginTop}
-                onChange={(e) => updateTemplateField('marginTop', Number(e.target.value))}
-                className="w-full text-xs font-mono p-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
-              />
-              <span className="text-[10px] font-mono text-slate-400 ms-1">mm</span>
-            </div>
+          <div
+            onMouseEnter={() => setActiveDimensionHighlight('marginTop')}
+            onMouseLeave={() => usePrintStore.getState().activeDimensionHighlight === 'marginTop' && setActiveDimensionHighlight(null)}
+          >
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5 cursor-pointer hover:text-sky-600 transition-colors">
+              {t('marginTop')} ({unitLabel})
+            </span>
+            <NumericInput
+              step="0.5"
+              min={0}
+              max={100}
+              fallbackValue={0}
+              dimensionKey="marginTop"
+              value={template.marginTop}
+              onChange={(val) => updateTemplateField('marginTop', val)}
+            />
           </div>
 
-          <div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">{t('marginBottom')}</span>
-            <div className="flex items-center">
-              <input
-                type="number"
-                step="0.5"
-                min="0"
-                max="100"
-                value={template.marginBottom}
-                onChange={(e) => updateTemplateField('marginBottom', Number(e.target.value))}
-                className="w-full text-xs font-mono p-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
-              />
-              <span className="text-[10px] font-mono text-slate-400 ms-1">mm</span>
-            </div>
+          <div
+            onMouseEnter={() => setActiveDimensionHighlight('marginBottom')}
+            onMouseLeave={() => usePrintStore.getState().activeDimensionHighlight === 'marginBottom' && setActiveDimensionHighlight(null)}
+          >
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5 cursor-pointer hover:text-sky-600 transition-colors">
+              {t('marginBottom')} ({unitLabel})
+            </span>
+            <NumericInput
+              step="0.5"
+              min={0}
+              max={100}
+              fallbackValue={0}
+              dimensionKey="marginBottom"
+              value={template.marginBottom}
+              onChange={(val) => updateTemplateField('marginBottom', val)}
+            />
           </div>
 
-          <div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">{t('marginRight')}</span>
-            <div className="flex items-center">
-              <input
-                type="number"
-                step="0.5"
-                min="0"
-                max="100"
-                value={template.marginRight}
-                onChange={(e) => updateTemplateField('marginRight', Number(e.target.value))}
-                className="w-full text-xs font-mono p-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
-              />
-              <span className="text-[10px] font-mono text-slate-400 ms-1">mm</span>
-            </div>
+          <div
+            onMouseEnter={() => setActiveDimensionHighlight('marginRight')}
+            onMouseLeave={() => usePrintStore.getState().activeDimensionHighlight === 'marginRight' && setActiveDimensionHighlight(null)}
+          >
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5 cursor-pointer hover:text-sky-600 transition-colors">
+              {t('marginRight')} ({unitLabel})
+            </span>
+            <NumericInput
+              step="0.5"
+              min={0}
+              max={100}
+              fallbackValue={0}
+              dimensionKey="marginRight"
+              value={template.marginRight}
+              onChange={(val) => updateTemplateField('marginRight', val)}
+            />
           </div>
 
-          <div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">{t('marginLeft')}</span>
-            <div className="flex items-center">
-              <input
-                type="number"
-                step="0.5"
-                min="0"
-                max="100"
-                value={template.marginLeft}
-                onChange={(e) => updateTemplateField('marginLeft', Number(e.target.value))}
-                className="w-full text-xs font-mono p-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
-              />
-              <span className="text-[10px] font-mono text-slate-400 ms-1">mm</span>
-            </div>
+          <div
+            onMouseEnter={() => setActiveDimensionHighlight('marginLeft')}
+            onMouseLeave={() => usePrintStore.getState().activeDimensionHighlight === 'marginLeft' && setActiveDimensionHighlight(null)}
+          >
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5 cursor-pointer hover:text-sky-600 transition-colors">
+              {t('marginLeft')} ({unitLabel})
+            </span>
+            <NumericInput
+              step="0.5"
+              min={0}
+              max={100}
+              fallbackValue={0}
+              dimensionKey="marginLeft"
+              value={template.marginLeft}
+              onChange={(val) => updateTemplateField('marginLeft', val)}
+            />
           </div>
         </div>
       </div>

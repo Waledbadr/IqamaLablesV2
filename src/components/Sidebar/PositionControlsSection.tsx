@@ -10,6 +10,9 @@ import {
   RotateCcw,
   Compass,
 } from 'lucide-react';
+import { NumericInput } from '../common/NumericInput';
+
+import { getUnitLabel } from '../../lib/units';
 
 export const PositionControlsSection: React.FC = () => {
   const {
@@ -23,10 +26,14 @@ export const PositionControlsSection: React.FC = () => {
     resetSelectedStickerOffset,
     resetAllPositions,
     getActivePageLayout,
+    setActiveDimensionHighlight,
+    measurementUnit,
     language,
   } = usePrintStore();
 
   const { t } = useTranslation(language);
+  const isAr = language === 'ar';
+  const unitLabel = getUnitLabel(measurementUnit, language);
   const activePage = getActivePageLayout();
   const selectedSticker =
     selectedStickerIndex !== null
@@ -68,37 +75,45 @@ export const PositionControlsSection: React.FC = () => {
         <div className="flex items-center justify-between">
           <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
             <Compass className="w-3.5 h-3.5 text-sky-500" />
-            <span>{t('globalOffset')}</span>
+            <span>{t('globalOffset')} ({unitLabel})</span>
           </label>
         </div>
 
         <div className="grid grid-cols-2 gap-1.5 text-xs">
-          <div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">{t('offsetX')} (X)</span>
-            <div className="flex items-center">
-              <input
-                type="number"
-                step={stepSize}
-                value={template.globalOffsetX}
-                onChange={(e) => setGlobalOffset(Number(e.target.value), template.globalOffsetY)}
-                className="w-full text-xs font-mono p-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
-              />
-              <span className="text-[10px] font-mono text-slate-400 ms-1">mm</span>
-            </div>
+          <div
+            onMouseEnter={() => setActiveDimensionHighlight('globalOffsetX')}
+            onMouseLeave={() => usePrintStore.getState().activeDimensionHighlight === 'globalOffsetX' && setActiveDimensionHighlight(null)}
+          >
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5 cursor-pointer hover:text-sky-500">
+              {t('offsetX')} ({unitLabel})
+            </span>
+            <NumericInput
+              step={stepSize}
+              min={-100}
+              max={100}
+              fallbackValue={0}
+              dimensionKey="globalOffsetX"
+              value={template.globalOffsetX}
+              onChange={(val) => setGlobalOffset(val, template.globalOffsetY)}
+            />
           </div>
 
-          <div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">{t('offsetY')} (Y)</span>
-            <div className="flex items-center">
-              <input
-                type="number"
-                step={stepSize}
-                value={template.globalOffsetY}
-                onChange={(e) => setGlobalOffset(template.globalOffsetX, Number(e.target.value))}
-                className="w-full text-xs font-mono p-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
-              />
-              <span className="text-[10px] font-mono text-slate-400 ms-1">mm</span>
-            </div>
+          <div
+            onMouseEnter={() => setActiveDimensionHighlight('globalOffsetY')}
+            onMouseLeave={() => usePrintStore.getState().activeDimensionHighlight === 'globalOffsetY' && setActiveDimensionHighlight(null)}
+          >
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5 cursor-pointer hover:text-sky-500">
+              {t('offsetY')} ({unitLabel})
+            </span>
+            <NumericInput
+              step={stepSize}
+              min={-100}
+              max={100}
+              fallbackValue={0}
+              dimensionKey="globalOffsetY"
+              value={template.globalOffsetY}
+              onChange={(val) => setGlobalOffset(template.globalOffsetX, val)}
+            />
           </div>
         </div>
 

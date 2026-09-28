@@ -11,6 +11,7 @@ import {
   AlignVerticalJustifyStart,
   AlignVerticalJustifyEnd,
 } from 'lucide-react';
+import { NumericInput } from '../common/NumericInput';
 
 export const TextStylingSection: React.FC = () => {
   const { template, updateTemplateField, language } = usePrintStore();
@@ -67,12 +68,13 @@ export const TextStylingSection: React.FC = () => {
             className="flex-1 accent-sky-500"
           />
 
-          <input
-            type="number"
-            min="6"
-            max="72"
+          <NumericInput
+            min={6}
+            max={72}
+            step={1}
+            fallbackValue={14}
             value={template.fontSize}
-            onChange={(e) => updateTemplateField('fontSize', Number(e.target.value))}
+            onChange={(val) => updateTemplateField('fontSize', val)}
             className="w-12 text-xs font-mono p-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-center"
           />
 
@@ -238,18 +240,15 @@ export const TextStylingSection: React.FC = () => {
 
         <div>
           <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">{t('cornerRadius')}</span>
-          <div className="flex items-center">
-            <input
-              type="number"
-              min="0"
-              max="20"
-              step="0.5"
-              value={template.cornerRadiusMm || 0}
-              onChange={(e) => updateTemplateField('cornerRadiusMm', Number(e.target.value))}
-              className="w-full text-xs font-mono p-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
-            />
-            <span className="text-[10px] font-mono text-slate-400 ms-1">mm</span>
-          </div>
+          <NumericInput
+            min={0}
+            max={30}
+            step={0.5}
+            fallbackValue={0}
+            unit="mm"
+            value={template.cornerRadiusMm || 0}
+            onChange={(val) => updateTemplateField('cornerRadiusMm', val)}
+          />
         </div>
       </div>
     </div>

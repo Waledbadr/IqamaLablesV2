@@ -1,4 +1,4 @@
-import { Language, PrinterCalibration, PrintJob, StickerTemplate, ThemeMode } from '../types';
+import { Language, MeasurementUnit, PrinterCalibration, PrintJob, StickerTemplate, ThemeMode } from '../types';
 import { DEFAULT_TEMPLATE, PRESET_TEMPLATES } from './templates';
 
 const STORAGE_KEYS = {
@@ -17,6 +17,7 @@ export interface AppSettings {
   showGrid: boolean;
   showRulers: boolean;
   showIndexBadges: boolean;
+  measurementUnit: MeasurementUnit;
   zoomScale: number;
   defaultTemplateId: string;
 }
@@ -34,6 +35,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   showGrid: true,
   showRulers: true,
   showIndexBadges: true,
+  measurementUnit: 'mm',
   zoomScale: 1.0,
   defaultTemplateId: DEFAULT_TEMPLATE.id,
 };

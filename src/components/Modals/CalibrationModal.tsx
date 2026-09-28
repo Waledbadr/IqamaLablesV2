@@ -10,6 +10,8 @@ import {
   Calculator,
 } from 'lucide-react';
 
+import { getUnitLabel } from '../../lib/units';
+
 export const CalibrationModal: React.FC = () => {
   const {
     isCalibrationModalOpen,
@@ -17,10 +19,12 @@ export const CalibrationModal: React.FC = () => {
     template,
     calibration,
     setCalibration,
+    measurementUnit,
     language,
   } = usePrintStore();
 
   const { t } = useTranslation(language);
+  const unitLabel = getUnitLabel(measurementUnit, language);
   const [measuredWidthMm, setMeasuredWidthMm] = useState<string>('100.0');
   const [measuredHeightMm, setMeasuredHeightMm] = useState<string>('100.0');
 
@@ -192,7 +196,7 @@ export const CalibrationModal: React.FC = () => {
               </div>
 
               <div className="p-2.5 rounded-lg bg-stone-50 dark:bg-stone-850 border border-stone-200 dark:border-stone-700">
-                <span className="text-[10px] text-stone-500 block mb-0.5">{language === 'ar' ? 'إزاحة السحب X (مم)' : 'Offset X (mm)'}</span>
+                <span className="text-[10px] text-stone-500 block mb-0.5">{language === 'ar' ? `إزاحة السحب X (${unitLabel})` : `Offset X (${unitLabel})`}</span>
                 <input
                   type="number"
                   step="0.1"
@@ -203,7 +207,7 @@ export const CalibrationModal: React.FC = () => {
               </div>
 
               <div className="p-2.5 rounded-lg bg-stone-50 dark:bg-stone-850 border border-stone-200 dark:border-stone-700">
-                <span className="text-[10px] text-stone-500 block mb-0.5">{language === 'ar' ? 'إزاحة السحب Y (مم)' : 'Offset Y (mm)'}</span>
+                <span className="text-[10px] text-stone-500 block mb-0.5">{language === 'ar' ? `إزاحة السحب Y (${unitLabel})` : `Offset Y (${unitLabel})`}</span>
                 <input
                   type="number"
                   step="0.1"

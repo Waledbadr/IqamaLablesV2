@@ -3,6 +3,40 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (function() {
+        try {
+          var win = typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : undefined);
+          if (!win) return;
+          var curFetch = typeof win.fetch === 'function' ? win.fetch.bind(win) : win.fetch;
+          var targets = [win];
+          if (typeof Window !== 'undefined' && Window.prototype) {
+            targets.push(Window.prototype);
+          }
+          var p = win;
+          while (p) {
+            if (targets.indexOf(p) === -1) {
+              targets.push(p);
+            }
+            p = Object.getPrototypeOf(p);
+          }
+          for (var i = 0; i < targets.length; i++) {
+            var target = targets[i];
+            try {
+              var desc = Object.getOwnPropertyDescriptor(target, 'fetch');
+              if (desc && (desc.set === undefined || desc.writable === false)) {
+                Object.defineProperty(target, 'fetch', {
+                  get: function() { return curFetch; },
+                  set: function(val) { curFetch = val; },
+                  configurable: true,
+                  enumerable: true
+                });
+              }
+            } catch (err) {}
+          }
+        } catch (e) {}
+      })();
+    </script>
     <title>StickerPrint - طباعة أرقام الموظفين على استيكرات A4</title>
     <meta name="description" content="تطبيق عالي الدقة لطباعة أرقام الموظفين على استيكرات A4 مع دعم الورق المستعمل جزئياً والمعايرة الدقيقة بالمليمتر" />
     <meta property="og:title" content="StickerPrint - طباعة أرقام الموظفين على استيكرات A4" />

@@ -62,6 +62,13 @@ export const PrintPreviewModal: React.FC = () => {
     }, 600);
   };
 
+  const paperName =
+    Math.abs(Math.min(rawPageWidth, rawPageHeight) - 210) <= 1 && Math.abs(Math.max(rawPageWidth, rawPageHeight) - 297) <= 1
+      ? 'A4'
+      : Math.abs(Math.min(rawPageWidth, rawPageHeight) - 148) <= 1 && Math.abs(Math.max(rawPageWidth, rawPageHeight) - 210) <= 1
+      ? 'A5'
+      : `${rawPageWidth} × ${rawPageHeight} مم`;
+
   return (
     <div className="fixed inset-0 z-50 bg-stone-900/80 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-scaleIn">
@@ -74,7 +81,7 @@ export const PrintPreviewModal: React.FC = () => {
                 معاينة الطباعة النهائية (Print Preview)
               </h2>
               <p className="text-[11px] text-stone-500">
-                يظهر هنا فقط ما ستتم طباعته على الورق الفعلي بدقة المتجهات
+                مقاس الورقة: {paperName} ({rawPageWidth} × {rawPageHeight} مم) • يظهر هنا فقط ما ستتم طباعته على الورق الفعلي
               </p>
             </div>
           </div>
@@ -94,7 +101,7 @@ export const PrintPreviewModal: React.FC = () => {
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
             <span>
-              <strong>تنبيه هام لدقة الطباعة:</strong> في نافذة الطباعة اختر حجم الورق <strong>A4</strong>، والمقياس <strong>100%</strong> (أو Actual Size)، وعطّل خيار Fit to Page والهوامش = <strong>بلا هوامش (None)</strong>.
+              <strong>تنبيه هام لدقة الطباعة:</strong> في نافذة الطباعة بالطابعة اختر حجم الورق <strong>{paperName}</strong>، والمقياس <strong>100%</strong> (أو Actual Size)، وعطّل خيار Fit to Page، والهوامش = <strong>بلا هوامش (None)</strong>.
             </span>
           </div>
 

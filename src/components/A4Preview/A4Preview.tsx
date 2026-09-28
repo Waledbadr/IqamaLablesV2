@@ -112,6 +112,17 @@ export const A4Preview: React.FC = () => {
     setZoomScale(Math.max(0.4, Math.min(2.0, idealScale)));
   };
 
+  const pMin = Math.min(geometry.pageWidth, geometry.pageHeight);
+  const pMax = Math.max(geometry.pageWidth, geometry.pageHeight);
+  const paperFormatLabel =
+    Math.abs(pMin - 210) <= 1 && Math.abs(pMax - 297) <= 1
+      ? 'A4'
+      : Math.abs(pMin - 148) <= 1 && Math.abs(pMax - 210) <= 1
+      ? 'A5'
+      : Math.abs(pMin - 215.9) <= 2 && Math.abs(pMax - 279.4) <= 2
+      ? 'Letter'
+      : (language === 'ar' ? 'مخصص' : 'Custom');
+
   const paperWidthPx = mmToPx(geometry.pageWidth, zoomScale);
   const paperHeightPx = mmToPx(geometry.pageHeight, zoomScale);
 
@@ -125,6 +136,7 @@ export const A4Preview: React.FC = () => {
             <span>{t('previewTitle')}</span>
           </span>
           <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+            <strong className="text-sky-600 dark:text-sky-400 me-1">{paperFormatLabel}</strong>
             {geometry.pageWidth} × {geometry.pageHeight} {language === 'ar' ? 'مم' : 'mm'} ({template.orientation === 'landscape' ? (language === 'ar' ? 'أفقي' : 'Landscape') : (language === 'ar' ? 'عمودي' : 'Portrait')})
           </span>
           <button

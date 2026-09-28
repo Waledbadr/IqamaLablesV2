@@ -175,7 +175,11 @@ export const TemplatesModal: React.FC = () => {
                         )}
                       </div>
 
-                      <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-2">
+                      <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-2 flex-wrap">
+                        <span className="bg-slate-100 dark:bg-slate-800 px-1 py-0.2 rounded text-[9px] text-slate-700 dark:text-slate-300">
+                          {tpl.paperWidth}×{tpl.paperHeight} {language === 'ar' ? 'مم' : 'mm'}
+                        </span>
+                        <span>•</span>
                         <span>
                           {tpl.columns}×{tpl.rows} ({tpl.columns * tpl.rows} {language === 'ar' ? 'استيكر' : 'stickers'})
                         </span>
